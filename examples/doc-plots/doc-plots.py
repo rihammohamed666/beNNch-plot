@@ -14,7 +14,7 @@ from subprocess import check_call
 import logging
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("__main__")
 
 class ModelType(StrEnum):
@@ -40,13 +40,17 @@ def cli_get_pipeline(uuid: str) -> None:
     datadir = "/work/datasets/bennch-datadump/"
     check_call("ssh hambach 'cd {datadir}; { tar } | grep -i PIPELINE_ID'", shell=True)
 
+
 @cli.command("scaling")
 @click.argument("csvfile", type=click.Path(dir_okay=False, exists=True, path_type=Path))
-@click.option("--model", "-m", help="Style options for specific model.", type=click.Choice(ModelType))
+@click.option("--model", "-m", help="Style options for specific model.", type=click.Choice(ModelType), required=True)
 @click.option("--output", "-o", type=click.Path(exists=False, path_type=Path))  # examples=[ 'hpc-v3.9-rc1.png']
 def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     "Create a standard benchmark plot for the documentation."
     bplot = Plot(data_file=csvfile, x_axis=['num_nodes'], time_scaling=1e3, detailed_timers=False)
+
+    if output is None:
+        output = csvfile.with_suffix(".png")
 
     fig = plt.figure(figsize=(12, 6), constrained_layout=False)
     spec = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, hspace=0.2)
