@@ -207,6 +207,10 @@ class Plot():
         self.df[('time_construction_create+time_construction_connect','std')] = (
             np.sqrt((self.df['time_construction_create']['std']**2 +
                      self.df['time_construction_connect']['std']**2)))
+        self.df[('time_construction_create','mean')] = self.df['py_time_create']['mean']
+        self.df[('time_construction_connect','mean')] = self.df['py_time_connect']['mean']
+        self.df[('time_construction_create','std')] = self.df['py_time_create']['std']
+        self.df[('time_construction_connect','std')] = self.df['py_time_connect']['std']
         if self.detailed_timers:
             self.df['time_phase_total'] = (
                 # self.df['time_update_spike_data'] +
