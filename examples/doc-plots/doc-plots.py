@@ -49,9 +49,6 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     "Create a standard benchmark plot for the documentation."
     bplot = Plot(data_file=csvfile, x_axis=['num_nodes'], time_scaling=1e3, detailed_timers=False)
 
-    if output is None:
-        output = csvfile.with_suffix(".png")
-
     fig = plt.figure(figsize=(12, 6), constrained_layout=False)
     spec = gridspec.GridSpec(ncols=2, nrows=1, figure=fig, hspace=0.2)
 
@@ -79,7 +76,7 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     if model == ModelType.microcircuit:
         ax1.set_ylim(0, 15)
     elif model == ModelType.hpc_benchmark:
-        ax1.set_ylim(0, 55)
+        ax1.set_ylim(0, 420)
     elif model == ModelType.multi_area:
         ax1.set_ylim(0, 1500)
     else:
@@ -111,7 +108,7 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
         # explicitly show realtime factor of 1
         ax2.hlines(y=1, xmin=0, xmax=np.max(bplot.df[bplot.x_axis].values), color='gray', linestyle='--')
     elif model == ModelType.hpc_benchmark:
-        ax2.set_ylim(0, 50)
+        ax2.set_ylim(0, 79)
     elif model == ModelType.multi_area:
         ax2.set_ylim(0, 120)
     else:
@@ -130,10 +127,16 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     ax2.text(0.0, 1.0, 'bplot', transform=ax1.transAxes + trans,
             fontsize='medium', va='bottom', fontweight='bold')
     """
+    show = False
+    if output is None:
+        log.warning("use --output to save as a file without opening a GUI.")
+        output = csvfile.with_suffix(".png")
+        show = True
 
     plt.savefig(output, dpi=400)
     log.info("saved as %s.", output)
-
+    if show:
+        plt.show()
 
 if __name__ == '__main__':
     cli()
