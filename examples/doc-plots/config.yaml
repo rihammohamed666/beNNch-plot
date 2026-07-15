@@ -1,0 +1,13 @@
+source:
+  host: hambach
+  path: /projects/bennch-data/bennch-datadump/
+
+vars:
+  PIPELINE_ID: 
+    path: 0*_bench/work/metadata/env-vars.out
+    parser: "grep -i PIPELINE_ID"
+
+  GATHER_METADATA_VERS:
+    path: 0*_bench/work/metadata/gather.json
+    parser: "jq .version"
+

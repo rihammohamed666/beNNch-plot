@@ -40,5 +40,5 @@ setup(
     ],
     packages=["bennchplot"],
     include_package_data=True,
-    install_requires=["pandas", "matplotlib", "pyyaml", "tol_colors"],
+    install_requires=["pandas", "matplotlib", "pyyaml", "tol_colors" , "pydantic", "ruamel.yaml", "rich_click"],
 )
