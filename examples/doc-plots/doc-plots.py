@@ -10,14 +10,11 @@ import matplotlib as mpl
 from matplotlib import gridspec
 import matplotlib.transforms as mtransforms
 from io import TextIOWrapper
-from subprocess import check_call
 import logging
 
-from ruamel.yaml import YAML
 from bennchplot import __version__
-from pydantic import BaseModel, Field
-
-yaml = YAML()
+from bennchplot.io.config import loadConfig
+from bennchplot.io.tarball import get_variable_value
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
@@ -27,22 +24,6 @@ class ModelType(StrEnum):
     microcircuit = auto()
     hpc_benchmark = auto()
     multi_area = auto()
-
-class SourceConfig(BaseModel):
-    host : str
-    path : Path | str
-
-class VarConfig(BaseModel):
-    path : str
-    parser: str
-
-class Config(BaseModel):
-    source : SourceConfig
-    vars : dict[str, VarConfig]
-    
-def loadConfig(file_name = "config.yaml"):
-    with Path(file_name).open(encoding="utf8") as in_file:
-        return Config.model_validate(yaml.load(in_file))
 
 @click.group()
 def cli():
@@ -60,9 +41,7 @@ def cli_get():
 def cli_get_var(uuid: str, var_name: str) -> None:
     "Get the triggering pipeline ID of the given simulation."
     config = loadConfig()
-    var = config.vars[var_name]
-    tar = f'tar --wildcards -zxOf { uuid }.tgz {var.path}'
-    check_call(f"ssh {config.source.host} 'cd {config.source.path}; { tar } | {var.parser}'", shell=True)
+    get_variable_value(uuid, config.vars[var_name], config.source)
 
 
 @cli.command("scaling")
