@@ -1,44 +1,42 @@
+"Script received via mail – to be integrated."
+
 #
 # python3 -m venv venv
 #
 # source venv/bin/activate
 # pip install -U pip
-# pip install -r requirements.txt 
+# pip install -r requirements.txt
 #
 #
 # Save as plot_page_faults.py and run with: python plot_page_faults.py
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
-import seaborn as sns
-from pathlib import Path
-from argparse import ArgumentParser
-import numpy as np
 import logging
+import re
+import sys
+from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from pathlib import Path
 from pprint import pformat
-import sys
+
 import docopt
+import matplotlib.colors as colors
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+from scipy.stats import gaussian_kde
 from tqdm import tqdm
 
-from scipy.stats import gaussian_kde
-import pandas as pd
-import re
-
-cm = 1/2.54
+cm = 1 / 2.54
 
 log = logging.getLogger(__name__)
-logging.getLogger("matplotlib.font_manager").setLevel(
-    logging.INFO
-)
+logging.getLogger("matplotlib.font_manager").setLevel(logging.INFO)
 
 parser = ArgumentParser()
-parser.add_argument("--path", type=str, default='data/')
-parser.add_argument("--output_path", type=str, default='data/')
+parser.add_argument("--path", type=str, default="data/")
+parser.add_argument("--output_path", type=str, default="data/")
 parser.add_argument("--cutoff", type=float, default=6)
-parser.add_argument("--machine", type=str, default='hambach')
-parser.add_argument("--output_name", type=str, default='')
+parser.add_argument("--machine", type=str, default="hambach")
+parser.add_argument("--output_name", type=str, default="")
 args = parser.parse_args()
 
 data_path = Path(args.path)
@@ -47,23 +45,26 @@ cutoff = args.cutoff
 machine = args.machine
 output_name = args.output_name
 
-#label_dict = {
-        #"before_prep_sim": "Before network\npreparation",
-        #"before_const": "Before network\nconstruction",
-        #"before_presim": "After netwrok\nconstruction",
-        #"before_sim": "Before network\nsimulation",
-        #"after_sim": "After network\nsimulation"
-        #}
+# label_dict = {
+# "before_prep_sim": "Before network\npreparation",
+# "before_const": "Before network\nconstruction",
+# "before_presim": "After netwrok\nconstruction",
+# "before_sim": "Before network\nsimulation",
+# "after_sim": "After network\nsimulation"
+# }
 label_dict = {
-        "construction_pf": "After network\nconstruction",
-        "presim_pf": "Before network\nsimulation",
-        "simulation_pf": "After network\nsimulation"
-        }
+    "construction_pf": "After network\nconstruction",
+    "presim_pf": "Before network\nsimulation",
+    "simulation_pf": "After network\nsimulation",
+}
 
 label_array = list(label_dict.keys())
 
+
 @dataclass
 class Data:
+    "Container for extraced data."
+
     cycle_time_dict: dict = field(default_factory=dict)
     spike_counter_dict: dict = field(default_factory=dict)
     sim_time_dict: dict = field(default_factory=dict)
@@ -74,9 +75,10 @@ class Data:
     pf_logfiles: list[Path] = field(default_factory=list)
     t_wall: float = 0.0
     t_wall_2ndhalf: float = 0.0
-    
+
     @property
     def mpi_processes(self):
+        "Count number of data-rows in ct_logfiles."
         return len(self.ct_logfiles)
 
 
@@ -84,19 +86,17 @@ def find_recordings(basepath: Path) -> list[Path]:
     "Locate bad version of kernel status written via print."
     return list(
         basepath.glob(
-#            "jube_results/000000/000*_bench/work/data/*/recordings/"
-#            "000*_bench/work/data/*/recordings/"
+            #            "jube_results/000000/000*_bench/work/data/*/recordings/"
+            #            "000*_bench/work/data/*/recordings/"
             "**"
         )
     )
 
+
 def find_logs(recording: Path, data_type: str) -> list[Path]:
-    "Locate log files in recordings of types: logfile, cycle_time_log, page_faults_log"
-    return list(
-        recording.glob(
-            f"*{data_type}*"
-        )
-    )
+    "Locate log files in recordings of types: logfile, cycle_time_log, page_faults_log."
+    return list(recording.glob(f"*{data_type}*"))
+
 
 def npconcat(datadict):
     "Concatenate all items from a dictionary into one numpy array."
@@ -106,33 +106,33 @@ def npconcat(datadict):
     return _data_concat
 
 
-def get_rank(file: Path) -> int:    
-    "Get the trailing number (rank) after last '_'."    
+def get_rank(file: Path) -> int:
+    "Get the trailing number (rank) after last '_'."
     return int(file.name.rsplit("_", 1)[1])
 
+
 def load(path: Path):
+    "Load data from given path to extracted UUID tarball."
     assert path.is_dir()
     log.info("loading data files from %s", path)
     data = Data()
     for p in find_recordings(path):
         if p.is_dir():
-            data.ct_logfiles.extend( find_logs(p, "cycle_time_log") )
-            data.pf_logfiles.extend( find_logs(p, "page_faults_log") )
+            data.ct_logfiles.extend(find_logs(p, "cycle_time_log"))
+            data.pf_logfiles.extend(find_logs(p, "page_faults_log"))
 
-# The files in the two log lists have an arbitray order.
-# For later correlation analysis we better sort them such that corresponding
-# entries in the two lists refer to the same rank. We achieve this by sorting
-# both lists according to rank
+    # The files in the two log lists have an arbitray order.
+    # For later correlation analysis we better sort them such that corresponding
+    # entries in the two lists refer to the same rank. We achieve this by sorting
+    # both lists according to rank
 
-    data.ct_logfiles=sorted(data.ct_logfiles, key=get_rank)
-    data.pf_logfiles=sorted(data.pf_logfiles, key=get_rank)
-            
+    data.ct_logfiles = sorted(data.ct_logfiles, key=get_rank)
+    data.pf_logfiles = sorted(data.pf_logfiles, key=get_rank)
+
     for idx, f in tqdm(enumerate(data.ct_logfiles), total=len(data.ct_logfiles)):
         with open(f, "r") as fl:
             ctdata = np.loadtxt(fl)
-        data.cycle_time_dict[idx] = (
-            ctdata[:, 0] * 1000 - ctdata[:, 1] * 1000
-        )  # without communicate time and in ms
+        data.cycle_time_dict[idx] = ctdata[:, 0] * 1000 - ctdata[:, 1] * 1000  # without communicate time and in ms
         data.spike_counter_dict[idx] = ctdata[:, -1]
         data.communicate_time_dict[idx] = ctdata[:, 1] * 1000
 
@@ -147,38 +147,35 @@ def load(path: Path):
     t_wall_2ndhalf = 0
     n = len(data.sim_time_dict)
     for t in data.sim_time_dict.values():
-        t_wall         += sum(t[presim_model:])
-        t_wall_2ndhalf += sum(t[presim_model+sim_start_2ndhalf:])
+        t_wall += sum(t[presim_model:])
+        t_wall_2ndhalf += sum(t[presim_model + sim_start_2ndhalf :])
     t_wall /= n
     t_wall_2ndhalf /= n
 
-    data.t_wall         = t_wall / 1000.0           # units of seconds
-    data.t_wall_2ndhalf = t_wall_2ndhalf / 1000.0   # units of seconds
-    #print(t_wall/10000)
-    #print(t_wall_2ndhalf/5000)
-    
-        
-              
+    data.t_wall = t_wall / 1000.0  # units of seconds
+    data.t_wall_2ndhalf = t_wall_2ndhalf / 1000.0  # units of seconds
+    # print(t_wall/10000)
+    # print(t_wall_2ndhalf/5000)
+
     for idx, f in tqdm(enumerate(data.pf_logfiles), total=len(data.pf_logfiles)):
         data.minor_pf_dict[idx] = {}
         if f.is_file():
-            with f.open( encoding="utf-8", mode="r") as fl:
+            with f.open(encoding="utf-8", mode="r") as fl:
                 for line in fl:
                     for key in label_array:
                         if line.strip().startswith(key):
                             split = line.split(" ")
-                            label = label_dict[ split[0].strip() ]
+                            label = label_dict[split[0].strip()]
                             minor_pf = int(split[1].strip())
                             major_pf = int(split[2].strip())
-                            
+
                             data.minor_pf_dict[idx][key] = minor_pf
     log.info("loading complete.")
     return data
 
 
-
 def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
-
+    "Make a heatmap from extracted data and plot it."
     pre_sim = 5000
     fontsize = 8
 
@@ -187,19 +184,19 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
     heatmap = np.zeros((len(steps), len(procs)))
 
     cutoff = int(round(cutoff * 16 / data.mpi_processes))
-    print("cutoff = "+str(cutoff))
-    
+    print("cutoff = " + str(cutoff))
+
     for idx, key in enumerate(data.cycle_time_dict.keys()):
         heatmap[:, idx] = np.clip(data.cycle_time_dict[key], a_min=0, a_max=cutoff)
 
     [X, Y] = np.meshgrid(steps, procs)
-    fig = plt.figure(figsize=(10*cm, 6*cm))
+    fig = plt.figure(figsize=(10 * cm, 6 * cm))
 
     fig.subplots_adjust(bottom=0.2)
     fig.subplots_adjust(right=1.05)
-    
+
     plt.title("wall-clock times of cycles (color code)", fontsize=fontsize)
-    
+
     ax = sns.heatmap(heatmap.T)
     mappable = ax.collections[0]
     mappable.set_clim(1, cutoff)
@@ -207,159 +204,163 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
     ax.set_xlabel("cycle / 10,000", fontsize=fontsize)
     ax.set_ylabel("rank", fontsize=fontsize)
 
-    ticks = np.arange(pre_sim, steps[-1]+pre_sim, 10000)
+    ticks = np.arange(pre_sim, steps[-1] + pre_sim, 10000)
     ax.set_xticks(ticks)
     ax.set_xticklabels([f"{int((t-pre_sim)/10000):d}" for t in ticks], rotation=0)
     ax.tick_params(axis="y", labelrotation=0)
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    
+    ax.tick_params(axis="both", which="major", labelsize=fontsize)
+
     cbar = mappable.colorbar
     cbar.update_normal(mappable)
     cbar.set_ticks([int(1 + i) for i in range(cutoff)])
     cbar.ax.tick_params(labelsize=fontsize)
 
     uuid = str(data.ct_logfiles[0].parts[0])
-    
+
     ax.text(
-        1.01, 0.5, uuid,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        1.01,
+        0.5,
+        uuid,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         rotation="vertical",
         va="center",
         ha="left",
-        color="black", 
+        color="black",
         fontsize=5,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
 
     ax.text(
-        0.9, 0.98, rtf,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.9,
+        0.98,
+        rtf,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         va="top",
         ha="right",
         color="white",
         fontsize=8,
-        fontweight="bold" 
+        fontweight="bold",
     )
 
-    
     fig.savefig(filename, dpi=300)
     plt.close(fig)
 
 
-
 def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
-
+    "Make a cycle-times plot of the extracted data and plot it."
     fontsize = 8
 
     cutoff = int(round(cutoff * 16 / data.mpi_processes))
-    print("cutoff = "+str(cutoff))
-    
+    print("cutoff = " + str(cutoff))
+
     cycle_time_concat = npconcat(data.cycle_time_dict)
     mask = cycle_time_concat < cutoff
-    plt.figure(figsize=(10*cm, 6.5*cm))
-    counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000, density=True, color='limegreen')
+    plt.figure(figsize=(10 * cm, 6.5 * cm))
+    counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000, density=True, color="limegreen")
 
     bin_centers = (bins[1:] + bins[:-1]) / 2
 
-    n_cycle_times            = len(cycle_time_concat)
+    n_cycle_times = len(cycle_time_concat)
     n_cycle_times_considered = len(cycle_time_concat[mask])
-    n_cycle_time_considered_frac_str = format(n_cycle_times_considered/n_cycle_times*100, ".2f")
+    n_cycle_time_considered_frac_str = format(n_cycle_times_considered / n_cycle_times * 100, ".2f")
 
-    print("cycle times considered: "+n_cycle_time_considered_frac_str+"%")
+    print("cycle times considered: " + n_cycle_time_considered_frac_str + "%")
 
-    
     min_ = np.around(np.min(cycle_time_concat), 2)
     mean_ = np.around(np.mean(cycle_time_concat), 2)
     max_ = np.around(np.max(cycle_time_concat), 2)
 
     # this keeps the green area covered by the distributions the same visual size
     ylim = 2.5 * data.mpi_processes / 16
-    
-    plt.ylim(0, ylim) 
+
+    plt.ylim(0, ylim)
     plt.xlim([0, cutoff])
 
-    
     plt.title(f"min {min_}, mean {mean_}, max {max_}", fontsize=fontsize)
     plt.xlabel("cycle time (ms)", fontsize=fontsize)
     plt.ylabel("density (1/ms)", fontsize=fontsize)
 
-    plt.tight_layout()  
-    
+    plt.tight_layout()
+
     uuid = str(data.ct_logfiles[0].parts[0])
 
     ax = plt.gca()
 
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    
+    ax.tick_params(axis="both", which="major", labelsize=fontsize)
+
     ax.text(
-        0.99, 0.5, uuid,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.99,
+        0.5,
+        uuid,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         rotation="vertical",
         va="center",
         ha="right",
-        color="black", 
+        color="black",
         fontsize=5,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
 
     ax.text(
-        0.9, 0.98, rtf,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.9,
+        0.98,
+        rtf,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         va="top",
         ha="right",
         color="black",
         fontsize=8,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
-    
+
     ax.text(
-        mean_, 0.5, n_cycle_time_considered_frac_str,
+        mean_,
+        0.5,
+        n_cycle_time_considered_frac_str,
         va="center",
         ha="center",
         color="black",
         fontsize=8,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
-    
-    plt.savefig(filename, dpi=300)
-    plt.close() 
 
+    plt.savefig(filename, dpi=300)
+    plt.close()
 
 
 def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
-
+    "Make a page-faults plot of the extracted data and plot it."
     fontsize = 8
-        
+
     minor_pfs = data.minor_pf_dict
 
     concat_data_presim = []
-    concat_data_sim = [] 
+    concat_data_sim = []
     for idx, dic in minor_pfs.items():
         for key, val in dic.items():
-            #if key == "before_sim":
+            # if key == "before_sim":
             if key == "presim_pf":
                 concat_data_presim.append(val)
-            #elif key == "after_sim":
+            # elif key == "after_sim":
             elif key == "simulation_pf":
                 concat_data_sim.append(val)
-
 
     presim_dur = 0.5
     sim_dur = 10.0
 
     ranks = [r for r in range(len(minor_pfs.keys()))]
     pre_contrib = [ps / presim_dur for ps in concat_data_presim]
-    sim_contrib = [s  / sim_dur for s  in concat_data_sim] 
+    sim_contrib = [s / sim_dur for s in concat_data_sim]
 
-    plt.figure(figsize=(11*cm, 6.5*cm))
+    plt.figure(figsize=(11 * cm, 6.5 * cm))
     plt.bar(ranks, pre_contrib, label=f"pre-sim (/s over {presim_dur}s)")
     plt.bar(ranks, sim_contrib, bottom=pre_contrib, label=f"simulation (/s over {sim_dur}s)")
     plt.xticks(ranks, [f"{r}" for r in ranks])
- 
+
     plt.ylabel("pages fault rate (1/s)", fontsize=fontsize)
     plt.xlabel("rank", fontsize=fontsize)
     plt.title("page faults by rank", fontsize=fontsize)
-    #plt.grid(axis="y", linestyle=":", linewidth=0.7, alpha=0.6)
+    # plt.grid(axis="y", linestyle=":", linewidth=0.7, alpha=0.6)
 
     # Overall average line
 
@@ -367,74 +368,74 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
 
     plt.tight_layout()
 
-    if  any(x > 5000 for x in pre_contrib):
-        plt.ylim(0, 4e7) 
+    if any(x > 5000 for x in pre_contrib):
+        plt.ylim(0, 4e7)
     else:
-         plt.ylim(0, 5000)
+        plt.ylim(0, 5000)
 
     uuid = str(data.ct_logfiles[0].parts[0])
 
     ax = plt.gca()
 
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    
+    ax.tick_params(axis="both", which="major", labelsize=fontsize)
+
     ax.text(
-        0.99, 0.5, uuid,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.99,
+        0.5,
+        uuid,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         rotation="vertical",
         va="center",
         ha="right",
-        color="black", 
+        color="black",
         fontsize=5,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
 
     ax.text(
-        0.9, 0.98, rtf,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.9,
+        0.98,
+        rtf,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         va="top",
         ha="right",
         color="black",
         fontsize=8,
-        #fontweight="bold" 
+        # fontweight="bold"
     )
 
     plt.savefig(filename, dpi=300)
     plt.close()
 
 
-
-    
-    
 def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png"):
+    "Make a page-faults vs. cycle-times plot of the extracted data and plot it."
     log.info("ploting page faults against cycle_times")
     cycle_times = data.cycle_time_dict
     minor_pfs = data.minor_pf_dict
 
-    t_presim = 500 #in ms
-    delta_t = 0.1 #in ms
+    t_presim = 500  # in ms
+    delta_t = 0.1  # in ms
     total_presim_cycle_times = []
     for idx, arr in cycle_times.items():
-        total_presim_cycle_times.append( np.sum( cycle_times[idx][:int(t_presim / delta_t)] ) )
+        total_presim_cycle_times.append(np.sum(cycle_times[idx][: int(t_presim / delta_t)]))
 
     concat_data_presim = []
     for idx, dic in minor_pfs.items():
         for key, val in dic.items():
-            #if key == "before_sim":
+            # if key == "before_sim":
             if key == "presim_pf":
                 concat_data_presim.append(val)
-
 
     # x: presim page faults per rank (already computed from data_str)
     x = np.array(concat_data_presim, dtype=float)
 
-    
     # y: total cycle time per rank in ms (already computed from ranks)
     y = np.array(total_presim_cycle_times, dtype=float)
 
     # normalize total cycle time to time per cycle in ms
     y /= 5000
-    
+
     assert x.shape == y.shape, "presim_pf and totals_ms must have same length"
 
     fig, ax = plt.subplots()
@@ -447,25 +448,23 @@ def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png")
     ax.set_xlabel("Presim page faults")
     ax.set_ylabel("Total cycle time of presim without communication(ms)")
 
-
-    plt.ylim(0, 6) 
-
+    plt.ylim(0, 6)
 
     # Overall average line
 
- #   plt.legend()
+    #   plt.legend()
 
     plt.tight_layout()
-    #plt.ylim(y_lim)
-    #plt.xlim(x_lim)
+    # plt.ylim(y_lim)
+    # plt.xlim(x_lim)
     plt.savefig(filename)
     plt.close()
 
     log.info("saved as %s", filename)
 
 
-    
 def correlation_spikes_plot_halfs(data, filename: str = "plot.png"):
+    "Make a spike-count vs. cycle-time plot of the extracted data and plot it."
     log.info("ploting spike count - cycle-times correlation")
     spike_counter_concat = npconcat(data.spike_counter_dict)
     cycle_time_concat = npconcat(data.cycle_time_dict)
@@ -476,17 +475,17 @@ def correlation_spikes_plot_halfs(data, filename: str = "plot.png"):
     s = spike_counter_concat[1:][::1]
     c = cycle_time_concat[:-1][::1]
     n = len(s) // 2
-    
-    print("number of data points: "+str(n))
 
-#    s = s[1000000:]
-#    c = c[1000000:]
-    
+    print("number of data points: " + str(n))
+
+    #    s = s[1000000:]
+    #    c = c[1000000:]
+
     plt.figure(figsize=(15, 8))
-    plt.plot(s[:n], c[:n], '.', alpha=1, color='orange')
-    plt.plot(s[n:], c[n:], '.', alpha=0.1, color='blue')
-    plt.ylabel('cycle time in ms')
-    plt.xlabel('spike counter')
+    plt.plot(s[:n], c[:n], ".", alpha=1, color="orange")
+    plt.plot(s[n:], c[n:], ".", alpha=0.1, color="blue")
+    plt.ylabel("cycle time in ms")
+    plt.xlabel("spike counter")
     plt.xlim(x_lim)
     plt.ylim(y_lim)
     plt.savefig(filename)
@@ -495,8 +494,8 @@ def correlation_spikes_plot_halfs(data, filename: str = "plot.png"):
     log.info("saved as %s", filename)
 
 
-    
 def correlation_spikes_plot(data, filename: str = "plot.png"):
+    "Make a spike-count vs. cycle-time plot of the extracted data and plot it."
     log.info("ploting spike count - cycle-times correlation")
     spike_counter_concat = npconcat(data.spike_counter_dict)
     cycle_time_concat = npconcat(data.cycle_time_dict)
@@ -508,110 +507,108 @@ def correlation_spikes_plot(data, filename: str = "plot.png"):
     c = cycle_time_concat[:-1][::1]
 
     d = 1
-    s=s[::d]
-    c=c[::d]
+    s = s[::d]
+    c = c[::d]
 
     sc = np.vstack([s, c])
-#    z = gaussian_kde(sc)(sc)
-#    z = gaussian_kde(sc,bw_method=0.001)(sc)
+    #    z = gaussian_kde(sc)(sc)
+    #    z = gaussian_kde(sc,bw_method=0.001)(sc)
 
-# Sort the points by density, so that the densest points are plotted last
-#    i = z.argsort()
-#    x, y, z = s[i], c[i], z[i]
+    # Sort the points by density, so that the densest points are plotted last
+    #    i = z.argsort()
+    #    x, y, z = s[i], c[i], z[i]
 
-
-#    plt.figure(figsize=(15, 8))
+    #    plt.figure(figsize=(15, 8))
     fig, ax = plt.subplots()
-#    a = ax.scatter(x, y, c=z, s=5, cmap='viridis')
-    a = ax.scatter(s, c, c='orange', s=1)
+    #    a = ax.scatter(x, y, c=z, s=5, cmap='viridis')
+    a = ax.scatter(s, c, c="orange", s=1)
 
-#    plt.colorbar(a, label='Point Density')    
-    plt.ylabel('cycle time in ms')
-    plt.xlabel('spike counter')
+    #    plt.colorbar(a, label='Point Density')
+    plt.ylabel("cycle time in ms")
+    plt.xlabel("spike counter")
     plt.xlim(x_lim)
     plt.ylim(y_lim)
 
     uuid = str(data.ct_logfiles[0].parts[0])
-    
+
     ax.text(
-        0.98, 0.5, uuid,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.98,
+        0.5,
+        uuid,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         rotation="vertical",
         va="center",
-        ha="right"
+        ha="right",
     )
 
-    
     plt.savefig(filename)
     plt.close()
-    
+
     log.info("saved as %s", filename)
 
 
 def cycletime_vs_spikecount(data, rtf, filename: str = "plot.png"):
-
+    "Make a spike-count vs. cycle-time plot of the extracted data and plot it."
     spike_counter_concat = npconcat(data.spike_counter_dict)
     cycle_time_concat = npconcat(data.cycle_time_dict)
 
     time_lim = int(round(6 * 16 / data.mpi_processes))
     count_lim = int(round(200 * 16 / data.mpi_processes))
-    
+
     x = spike_counter_concat[1:][::1]
     y = cycle_time_concat[:-1][::1]
-
 
     H, xedges, yedges = np.histogram2d(x, y, bins=100, range=[[0, count_lim], [0, time_lim]])
 
     fig, ax = plt.subplots()
 
-# Transpose H so x is horizontal, y is vertical
-    Z=H.T
+    # Transpose H so x is horizontal, y is vertical
+    Z = H.T
 
-    norm = colors.LogNorm(vmin=Z[Z > 0].min(), vmax=Z.max()) 
+    norm = colors.LogNorm(vmin=Z[Z > 0].min(), vmax=Z.max())
     im = ax.imshow(
         Z,
-        norm=norm, cmap="viridis",
-        origin='lower',
+        norm=norm,
+        cmap="viridis",
+        origin="lower",
         extent=[0, count_lim, 0, time_lim],
-        aspect='auto',
-#        vmax = 1000
+        aspect="auto",
+        #        vmax = 1000
     )
 
-    fig.colorbar(im, ax=ax, label='counts')
+    fig.colorbar(im, ax=ax, label="counts")
 
-    ax.set_xlabel('spike count')
-    ax.set_ylabel('cycle time')
-    ax.set_title('log density histogram')
+    ax.set_xlabel("spike count")
+    ax.set_ylabel("cycle time")
+    ax.set_title("log density histogram")
 
     uuid = str(data.ct_logfiles[0].parts[0])
-    
+
     ax.text(
-        0.98, 0.5, uuid,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
+        0.98,
+        0.5,
+        uuid,
+        transform=ax.transAxes,  # axes coords: (0,0)=bottom-left, (1,1)=top-right
         rotation="vertical",
         va="center",
-        ha="right"
+        ha="right",
     )
 
     ax.text(
-        0.9, 0.98, rtf,
-        transform=ax.transAxes,   # axes coords: (0,0)=bottom-left, (1,1)=top-right
-        va="top",
-        ha="right"
+        0.9, 0.98, rtf, transform=ax.transAxes, va="top", ha="right"  # axes coords: (0,0)=bottom-left, (1,1)=top-right
     )
 
     plt.savefig(filename)
     plt.close()
 
 
-   
-
 def main():
-#    logging.basicConfig(level=logging.DEBUG)
+    "Run all plots in this script."
+    #    logging.basicConfig(level=logging.DEBUG)
 
     data = load(data_path)
 
-    print("working in path: ",data_path)
+    print("working in path: ", data_path)
 
     try:
         r = next(data_path.rglob("benchmark_results.csv"))
@@ -641,34 +638,34 @@ def main():
                 m = re.search(r"'t_sim':\s*([-+0-9.eE]+)", t)
                 if m:
                     t_model = float(m.group(1))
-                
+
     else:
         d = pd.read_csv(r)
-        t_wall  = d["time_simulate"].iloc[0]
-        t_model = d["model_time_sim"].iloc[0]/1000
+        t_wall = d["time_simulate"].iloc[0]
+        t_model = d["model_time_sim"].iloc[0] / 1000
 
-        
-    print("t_wall  = "+ str(t_wall))
-    print("t_model = "+ str(t_model))
+    print("t_wall  = " + str(t_wall))
+    print("t_model = " + str(t_model))
 
     print("from data object:")
-    print("t_wall = "+ str(data.t_wall))
-    print("t_wall_2ndhalf = "+ str(data.t_wall_2ndhalf))
+    print("t_wall = " + str(data.t_wall))
+    print("t_wall_2ndhalf = " + str(data.t_wall_2ndhalf))
 
-    rtf = "RTF = " \
-           + format(data.t_wall/t_model, ".2f") + " (" \
-           + format(data.t_wall_2ndhalf/(t_model/2.), ".2f") + ")"
-           
+    rtf = (
+        "RTF = "
+        + format(data.t_wall / t_model, ".2f")
+        + " ("
+        + format(data.t_wall_2ndhalf / (t_model / 2.0), ".2f")
+        + ")"
+    )
 
     print(rtf)
-    
+
     output_path.mkdir(parents=True, exist_ok=True)
 
-
-    
     uuid = str(data.ct_logfiles[0].parts[0])
-    
-    output_ct_heatmap   = output_path / f"{uuid}_{output_name}_heatmap.png"
+
+    output_ct_heatmap = output_path / f"{uuid}_{output_name}_heatmap.png"
     output_ct_corr_hist = output_path / f"{uuid}_{output_name}_cycle_times_correlation_hist.png"
     output_pf = output_path / f"{uuid}_{output_name}_page_faults.png"
     output_ct = output_path / f"{uuid}_{output_name}_cycle_times.png"
@@ -676,18 +673,15 @@ def main():
     output_ct_corr = output_path / f"{output_name}_cycle_times_correlation.png"
     output_ct_pf = output_path / f"{output_name}_cycletimes_pagefaults.png"
 
-    
     heatmap(data, rtf, cutoff=float(cutoff), filename=output_ct_heatmap)
     cycletime_vs_spikecount(data, rtf, output_ct_corr_hist)
     page_faults_plot(data, rtf, filename=output_pf, machine_name=machine)
-    
+
     cycle_times(data, rtf, cutoff=float(cutoff), filename=output_ct)
 
-#    pagefaults_vs_cycletime_plot(data, filename=output_ct_pf, machine_name=machine)
+    #    pagefaults_vs_cycletime_plot(data, filename=output_ct_pf, machine_name=machine)
 
     print(output_ct_heatmap)
-
-
 
 
 if __name__ == "__main__":

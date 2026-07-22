@@ -1,11 +1,16 @@
-from pathlib import Path
+"Configuration module."
+
 import logging
-from bennchplot.io.config.models import Config
+from pathlib import Path
+
 from bennchplot.io import yaml
+from bennchplot.io.config.models import Config
 
 log = logging.getLogger(__name__)
 
-def loadConfig(file_name = "config.yaml") -> Config:
+
+def loadConfig(file_name="config.yaml") -> Config:
+    "Load and parse config from given filename."
     log.debug("loading config from %s", file_name)
     with Path(file_name).open(encoding="utf8") as in_file:
         return Config.model_validate(yaml.load(in_file))

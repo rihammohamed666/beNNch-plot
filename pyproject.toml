@@ -191,7 +191,7 @@ add-ignore = "D300"
 # config see https://callowayproject.github.io/bump-my-version/tutorials/semantic-versioning-example/
 #
 [tool.bumpversion]
-current_version = "0.1.1-dev.224"
+current_version = "0.1.0"
 # parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 
 parse = """(?x)

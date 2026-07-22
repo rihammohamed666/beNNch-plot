@@ -1,10 +1,12 @@
 "Some basic configuration that is read from external sources."
-import os
+
 import logging
-from stat import S_IMODE
+import os
 from pathlib import Path
+from stat import S_IMODE
 
 log = logging.getLogger(__name__)
+
 
 class XDG:
     """
@@ -20,7 +22,9 @@ class XDG:
     (xdg.cache_home / "myname").mkdir(mode=0x700, parents=True, exist_ok=True)
     ```
 
-    See also
+    Note that similar fuctionality is implemented in `platformdirs` package.
+
+    See Also
     --------
     * https://specifications.freedesktop.org/basedir/latest/
     * https://wiki.archlinux.org/title/XDG_Base_Directory
@@ -45,7 +49,6 @@ class XDG:
         Should default to `$HOME/.cache`.
         """
         return Path(os.environ.get("XDG_CACHE_HOME", os.path.expandvars("$HOME/.cache"))) / self._myname
-
 
     @property
     def data_home(self) -> Path:
@@ -83,7 +86,6 @@ class XDG:
         """
         return Path(os.environ.get("XDG_STATE_HOME", os.path.expandvars("$HOME/.local/state"))) / self._myname
 
-
     @property
     def runtime_dir(self) -> Path:
         """
@@ -116,19 +118,20 @@ class XDG:
         assert mode == 0o700, f"XDG_RUNTIME_DIR has to be writable by the user only, but is {mode:#o}"
         return runtime_dir
 
-
     @property
     def user_bin_dir(self) -> Path:
         """
-        $HOME/.local/bin
+        Custom definition of $HOME/.local/bin.
 
         Commonly used for user-specific executable files
 
-        Note:
+        Note
+        ----
             There is NO `$XDG_BIN_HOME` directory `$HOME/.local` is intended to
             be analogous to `/usr/local`.
 
-        Note:
+        Note
+        ----
             Since $HOME might be shared between systems of different
             architectures, installing compiled binaries to `$HOME/.local/bin`
             could cause problems when used on systems of differing
@@ -138,11 +141,10 @@ class XDG:
         """
         return Path(os.environ.get("XDG_BIN_HOME", os.path.expandvars("$HOME/.local/bin")))
 
-
     @property
     def data_dirs(self) -> list[Path]:
         """
-        System directory XDG_DATA_DIRS
+        System directories XDG_DATA_DIRS.
 
         List of directories separated by : (analogous to PATH).
 
@@ -150,11 +152,10 @@ class XDG:
         """
         return [Path(p) for p in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":")]
 
-
     @property
     def config_dirs(self) -> list[Path]:
         """
-        System directory XDG_CONFIG_DIRS
+        System directories XDG_CONFIG_DIRS.
 
         List of directories separated by : (analogous to PATH).
 

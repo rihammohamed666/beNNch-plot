@@ -1,14 +1,31 @@
-from pydantic import BaseModel, Field
+"Data models for configuration files."
+
 from pathlib import Path
 
+from pydantic import BaseModel, Field
+
+
 class SourceConfig(BaseModel):
-    host : str
-    path : Path | str
+    "Define a source location for the UUID tarballs."
+
+    host: str
+    path: Path | str
+
 
 class VarConfig(BaseModel):
-    path : str
+    """
+    Extractor config for bash stdio stream parsers.
+
+    The found `path`s (wildcards allowed, see man tar) will be directly
+    streamed to stdin of `parser` command on the shell.
+    """
+
+    path: str
     parser: str
 
+
 class Config(BaseModel):
-    source : SourceConfig
-    vars : dict[str, VarConfig]
+    "Top-level configuration file format."
+
+    source: SourceConfig
+    vars: dict[str, VarConfig]

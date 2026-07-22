@@ -1,5 +1,6 @@
 """
 beNNch-plot - standardized plotting routines for performance benchmarks.
+
 Copyright (C) 2021 Forschungszentrum Juelich GmbH, INM-6
 
 This program is free software: you can redistribute it and/or modify it under
@@ -15,6 +16,6 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 from .bennchplot import Plot

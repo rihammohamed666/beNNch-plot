@@ -1,14 +1,20 @@
-import git
+"UUID set management modules."
+
 import logging
 import os
-from bennchplot.config import XDG
 
+import git
+from bennchplot.config import XDG
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
+
 class UuidSet:
+    "Set of UUIDs."
+
     pass
+
 
 class SetsData:
     "Manage a SetsData storage repository."
@@ -16,7 +22,6 @@ class SetsData:
     def __init__(self):
         log.debug("SetsData")
         self._path = XDG("bennchplot/sets").data_home
-
 
     def init(self):
         "Initialize a new repository."
@@ -29,6 +34,7 @@ class SetsData:
         "Make sure the default remote knows everything and we're uptodate."
 
     def add(self, uset: UuidSet) -> None:
+        "Add given set to the storage."
         pass
 
 
