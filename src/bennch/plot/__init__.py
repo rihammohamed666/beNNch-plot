@@ -14,9 +14,7 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 
 SPDX-License-Identifier: GPL-3.0-or-later
 """
-# __init__.py
 
-# Version of the benchplot package
 __version__ = "0.1"
 
 from .bennchplot import Plot
