@@ -33,6 +33,12 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules"
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pre-commit",
+    "bump-my-version",
+]
+
 [project.urls]
 "Homepage" = "https://github.com/INM-6/beNNch-plot"
 "Bug Tracker" = "https://github.com/INM-6/beNNch-plot/issues"
