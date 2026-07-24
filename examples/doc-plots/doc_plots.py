@@ -25,9 +25,9 @@ log = logging.getLogger("__main__")
 class ModelType(StrEnum):
     "Enumeration of known model types."
 
-    microcircuit = auto()
-    hpc_benchmark = auto()
-    multi_area = auto()
+    MICROCIRCUIT = auto()
+    HPC_BENCHMARK = auto()
+    MULTI_AREA = auto()
 
 
 @click.group()
@@ -86,11 +86,11 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
 
     # Set the ylim for benchmark plots to make different runs of same model
     # visually comparable
-    if model == ModelType.microcircuit:
+    if model == ModelType.MICROCIRCUIT:
         ax1.set_ylim(0, 15)
-    elif model == ModelType.hpc_benchmark:
+    elif model == ModelType.HPC_BENCHMARK:
         ax1.set_ylim(0, 420)
-    elif model == ModelType.multi_area:
+    elif model == ModelType.MULTI_AREA:
         ax1.set_ylim(0, 1500)
     else:
         pass  # Let the ylim creation automatic for potential other models
@@ -103,7 +103,7 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     bplot.plot_main(quantities=["sim_factor"], axis=ax2, error=True, fmt="-")
 
     ax2.set_xlabel("Number of Nodes")
-    ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$" r"$T_{\mathrm{model}}$")
+    ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$ $T_{\mathrm{model}}$")
 
     # Set the xlim
     automatic_xlim = ax2.get_xlim()
@@ -115,13 +115,13 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
 
     # Set the ylim for benchmark plots to make different runs of same model
     # visually comparable
-    if model == ModelType.microcircuit:
+    if model == ModelType.MICROCIRCUIT:
         ax2.set_ylim(0, 1.0)
         # explicitly show realtime factor of 1
         ax2.hlines(y=1, xmin=0, xmax=np.max(bplot.df[bplot.x_axis].values), color="gray", linestyle="--")
-    elif model == ModelType.hpc_benchmark:
+    elif model == ModelType.HPC_BENCHMARK:
         ax2.set_ylim(0, 79)
-    elif model == ModelType.multi_area:
+    elif model == ModelType.MULTI_AREA:
         ax2.set_ylim(0, 120)
     else:
         pass  # Let the ylim creation automatic for potential other models
@@ -132,13 +132,12 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     ax2.margins(x=0)
     bplot.simple_axis(ax2)
 
-    """
-    ax1.text(0.0, 1.0, 'A', transform=ax1.transAxes + trans,
-            fontsize='medium', va='bottom', fontweight='bold')
+    # ax1.text(0.0, 1.0, 'A', transform=ax1.transAxes + trans,
+    #         fontsize='medium', va='bottom', fontweight='bold')
 
-    ax2.text(0.0, 1.0, 'bplot', transform=ax1.transAxes + trans,
-            fontsize='medium', va='bottom', fontweight='bold')
-    """
+    # ax2.text(0.0, 1.0, 'bplot', transform=ax1.transAxes + trans,
+    #         fontsize='medium', va='bottom', fontweight='bold')
+
     show = False
     if output is None:
         log.warning("use --output to save as a file without opening a GUI.")

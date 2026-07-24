@@ -8,12 +8,12 @@ import bennch.plot.bennchplot as bp
 
 # import matplotlib.transforms as mtransforms
 
-path = "/home/mohamed/pythontest/results_file"  # with jemalloc
-filename_save = "NEST-v3.9-rc1_Microcircuit_DOCS_0923.png"
-benchmark_model = "microcircuit"
+PATH = "/home/mohamed/pythontest/results_file"  # with jemalloc
+FILENAME_SAVE = "NEST-v3.9-rc1_Microcircuit_DOCS_0923.png"
+BENCHMARK_MODEL = "microcircuit"
 
 print("before plot")
-B = bp.Plot(data_file=path, x_axis=["num_nodes"], time_scaling=1e3, detailed_timers=False)
+B = bp.Plot(data_file=PATH, x_axis=["num_nodes"], time_scaling=1e3, detailed_timers=False)
 print("after plot")
 
 
@@ -51,11 +51,11 @@ def plot_docs():
     ax1.legend(handles1[::-1], labels1[::-1])
     # Set the ylim for benchmark plots to make different runs of same model
     # visually comparable
-    if benchmark_model == "microcircuit":
+    if BENCHMARK_MODEL == "microcircuit":
         ax1.set_ylim(0, 15)
-    elif benchmark_model == "hpc_benchmark":
+    elif BENCHMARK_MODEL == "hpc_benchmark":
         ax1.set_ylim(0, 55)
-    elif benchmark_model == "multi_area":
+    elif BENCHMARK_MODEL == "multi_area":
         ax1.set_ylim(0, 1500)
     else:
         pass  # Let the ylim creation automatic for potential other models
@@ -68,7 +68,7 @@ def plot_docs():
     B.plot_main(quantities=["sim_factor"], axis=ax2, error=True, fmt="-")
 
     ax2.set_xlabel("Number of Nodes")
-    ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$" r"$T_{\mathrm{model}}$")
+    ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$ $T_{\mathrm{model}}$")
 
     # Set the xlim
     automatic_xlim = ax2.get_xlim()
@@ -80,13 +80,13 @@ def plot_docs():
 
     # Set the ylim for benchmark plots to make different runs of same model
     # visually comparable
-    if benchmark_model == "microcircuit":
+    if BENCHMARK_MODEL == "microcircuit":
         ax2.set_ylim(0, 1.0)
         # explicitly show realtime factor of 1
         ax2.hlines(y=1, xmin=0, xmax=np.max(B.df[B.x_axis].values), color="gray", linestyle="--")
-    elif benchmark_model == "hpc_benchmark":
+    elif BENCHMARK_MODEL == "hpc_benchmark":
         ax2.set_ylim(0, 50)
-    elif benchmark_model == "multi_area":
+    elif BENCHMARK_MODEL == "multi_area":
         ax2.set_ylim(0, 120)
     else:
         pass  # Let the ylim creation automatic for potential other models
@@ -103,7 +103,7 @@ def plot_docs():
     # ax2.text(0.0, 1.0, 'B', transform=ax1.transAxes + trans,
     #         fontsize='medium', va='bottom', fontweight='bold')
 
-    plt.savefig(filename_save, dpi=400)
+    plt.savefig(FILENAME_SAVE, dpi=400)
 
 
 plot_docs()

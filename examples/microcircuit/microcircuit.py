@@ -16,10 +16,11 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import bennchplot as bp
-import matplotlib.gridspec as gridspec
 import numpy as np
+from matplotlib import gridspec
 from matplotlib import pyplot as plt
+
+from bennch.plot.bennchplot import Plot
 
 # define what to plot:
 # - data_file:
@@ -35,7 +36,7 @@ from matplotlib import pyplot as plt
 args = {"data_file": "8d196bc5-b5f5-448b-8571-bf695ed64d4a.csv", "x_axis": ["num_nvp"], "time_scaling": 1e3}
 
 # Figure layout
-B = bp.Plot(**args)
+B = Plot(**args)
 
 # Plotting
 widths = [1]

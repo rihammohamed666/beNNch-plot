@@ -16,8 +16,9 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import bennchplot as bp
 from matplotlib import pyplot as plt
+
+from bennch.plot.bennchplot import Plot
 
 # define what to plot:
 # - data_file:
@@ -33,7 +34,7 @@ from matplotlib import pyplot as plt
 args = {"data_file": "45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", "x_axis": ["num_nodes"], "time_scaling": 1e3}
 
 # Instantiate class
-B = bp.Plot(**args)
+B = Plot(**args)
 
 # Figure layout
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))

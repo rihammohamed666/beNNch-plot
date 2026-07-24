@@ -15,16 +15,17 @@ from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from pathlib import Path
 
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import colors
 from rich.progress import track
 
 # from scipy.stats import gaussian_kde
 
-cm = 1 / 2.54
+cm = 1 / 2.54  # pylint: disable=invalid-name
+
 
 log = logging.getLogger(__name__)
 logging.getLogger("matplotlib.font_manager").setLevel(logging.INFO)
@@ -106,11 +107,11 @@ def find_logs(recording: Path, data_type: str) -> list[Path]:
     return list(recording.glob(f"*{data_type}*"))
 
 
-def npconcat(datadict):
+def npconcat(datadict: dict[int, np.ndarray]) -> np.ndarray:
     "Concatenate all items from a dictionary into one numpy array."
     _data_concat = np.zeros((0,))
-    for idx, spike_counts in datadict.items():
-        _data_concat = np.concatenate((_data_concat, datadict[idx]))
+    for _, spike_counts in sorted(datadict.items()):
+        _data_concat = np.concatenate((_data_concat, spike_counts))
     return _data_concat
 
 
@@ -137,9 +138,9 @@ def load(path: Path):
     data.ct_logfiles = sorted(data.ct_logfiles, key=get_rank)
     data.pf_logfiles = sorted(data.pf_logfiles, key=get_rank)
 
-    for idx, f in track(enumerate(data.ct_logfiles), total=len(data.ct_logfiles)):
-        with open(f, "r") as fl:
-            ctdata = np.loadtxt(fl)
+    for idx, filename in track(enumerate(data.ct_logfiles), total=len(data.ct_logfiles)):
+        with open(filename, "r", encoding="utf8") as infile:
+            ctdata = np.loadtxt(infile)
         data.cycle_time_dict[idx] = ctdata[:, 0] * 1000 - ctdata[:, 1] * 1000  # without communicate time and in ms
         data.spike_counter_dict[idx] = ctdata[:, -1]
         data.communicate_time_dict[idx] = ctdata[:, 1] * 1000
@@ -165,10 +166,10 @@ def load(path: Path):
     # print(t_wall/10000)
     # print(t_wall_2ndhalf/5000)
 
-    for idx, f in track(enumerate(data.pf_logfiles), total=len(data.pf_logfiles)):
+    for idx, filename in track(enumerate(data.pf_logfiles), total=len(data.pf_logfiles)):
         data.minor_pf_dict[idx] = {}
-        if f.is_file():
-            with f.open(encoding="utf-8", mode="r") as fl:
+        if filename.is_file():
+            with filename.open(encoding="utf-8", mode="r") as fl:
                 for line in fl:
                     for key in label_array:
                         if line.strip().startswith(key):
@@ -189,15 +190,16 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     steps = np.arange(0, len(data.cycle_time_dict[0]), 1)
     procs = np.arange(0, int(data.mpi_processes), 1)
-    heatmap = np.zeros((len(steps), len(procs)))
+    htmap = np.zeros((len(steps), len(procs)))
 
     cutoff = int(round(cutoff * 16 / data.mpi_processes))
     print("cutoff = " + str(cutoff))
 
     for idx, key in enumerate(data.cycle_time_dict.keys()):
-        heatmap[:, idx] = np.clip(data.cycle_time_dict[key], a_min=0, a_max=cutoff)
+        htmap[:, idx] = np.clip(data.cycle_time_dict[key], a_min=0, a_max=cutoff)
 
-    [X, Y] = np.meshgrid(steps, procs)
+    # [X, Y] = np.meshgrid(steps, procs)
+    np.meshgrid(steps, procs)
     fig = plt.figure(figsize=(10 * cm, 6 * cm))
 
     fig.subplots_adjust(bottom=0.2)
@@ -205,7 +207,7 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     plt.title("wall-clock times of cycles (color code)", fontsize=fontsize)
 
-    ax = sns.heatmap(heatmap.T)
+    ax = sns.heatmap(htmap.T)
     mappable = ax.collections[0]
     mappable.set_clim(1, cutoff)
 
@@ -264,7 +266,9 @@ def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> Non
     cycle_time_concat = npconcat(data.cycle_time_dict)
     mask = cycle_time_concat < cutoff
     plt.figure(figsize=(10 * cm, 6.5 * cm))
-    counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000, density=True, color="limegreen")
+    # counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000,
+    # density=True, color="limegreen")
+    plt.hist(cycle_time_concat[mask], bins=1000, density=True, color="limegreen")
 
     # bin_centers = (bins[1:] + bins[:-1]) / 2
 
@@ -357,7 +361,7 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
     presim_dur = 0.5
     sim_dur = 10.0
 
-    ranks = [r for r in range(len(minor_pfs.keys()))]
+    ranks = list(range(len(minor_pfs.keys())))
     pre_contrib = [ps / presim_dur for ps in concat_data_presim]
     sim_contrib = [s / sim_dur for s in concat_data_sim]
 

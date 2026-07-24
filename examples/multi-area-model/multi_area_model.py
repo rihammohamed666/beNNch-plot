@@ -16,28 +16,28 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-import bennchplot as bp
-import matplotlib.gridspec as gridspec
 import numpy as np
+from matplotlib import gridspec
 from matplotlib import pyplot as plt
 
-"""
-define what to plot:
-- data_file:
-    Path to .csv file containing benchmarking measurements.
-- x_axis:
-    Giving a list of strings corresponding to the main scaling
-    variable, typically 'num_nodes' or 'num_nvp'.
-- time_scaling:
-    Quotient between unit time of timing measurement and
-    simulation. Usually, the former is given in s while
-    the latter is given in ms.
-"""
+from bennch.plot.bennchplot import Plot
+
+# define what to plot:
+# - data_file:
+#     Path to .csv file containing benchmarking measurements.
+# - x_axis:
+#     Giving a list of strings corresponding to the main scaling
+#     variable, typically 'num_nodes' or 'num_nvp'.
+# - time_scaling:
+#     Quotient between unit time of timing measurement and
+#     simulation. Usually, the former is given in s while
+#     the latter is given in ms.
+
 args = {"data_file": "45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", "x_axis": ["num_nodes"], "time_scaling": 1e3}
 
 
 # Instantiate class
-B = bp.Plot(**args)
+B = Plot(**args)
 
 # Figure layout
 widths = [1, 1]
@@ -76,7 +76,7 @@ B.simple_axis(ax2)
 
 ax1.set_xlabel("Number of nodes")
 ax1.set_ylabel(r"$T_{\mathrm{wall}}$ [s] for $T_{\mathrm{model}} =$" + f"{np.unique(B.df.model_time_sim.values)[0]} s")
-ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$" r"$T_{\mathrm{model}}$")
+ax2.set_ylabel(r"real-time factor $T_{\mathrm{wall}}/$ $T_{\mathrm{model}}$")
 ax3.set_xlabel("Number of nodes")
 ax3.set_ylabel(r"relative $T_{\mathrm{wall}}$ [%]")
 
