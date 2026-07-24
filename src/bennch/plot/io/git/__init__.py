@@ -13,8 +13,6 @@ log.setLevel(logging.DEBUG)
 class UuidSet:
     "Set of UUIDs."
 
-    pass
-
 
 class SetsData:
     "Manage a SetsData storage repository."
@@ -35,7 +33,6 @@ class SetsData:
 
     def add(self, uset: UuidSet) -> None:
         "Add given set to the storage."
-        pass
 
 
 # ./git-contributors/gitchanges/  → GitPython  2021

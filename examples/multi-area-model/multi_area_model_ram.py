@@ -19,6 +19,7 @@ SPDX-License-Identifier: GPL-3.0-or-later
 from matplotlib import pyplot as plt
 
 from bennch.plot.bennchplot import Plot
+from bennch.plot.io.csv import load_data
 
 # define what to plot:
 # - data_file:
@@ -31,10 +32,13 @@ from bennch.plot.bennchplot import Plot
 #     simulation. Usually, the former is given in s while
 #     the latter is given in ms.
 
-args = {"data_file": "45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", "x_axis": ["num_nodes"], "time_scaling": 1e3}
-
 # Instantiate class
-B = Plot(**args)
+B = Plot(
+    df=load_data("45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", aggregation={}),
+    x_axis=["num_nodes"],
+    time_scaling=1e3,
+    label_params={},
+)
 
 # Figure layout
 fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(12, 6))

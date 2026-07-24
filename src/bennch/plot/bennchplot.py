@@ -20,7 +20,6 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 import matplotlib
 import numpy as np
-import pandas as pd
 
 try:
     from . import plot_params as pp
@@ -37,9 +36,6 @@ class Plot:
     x_axis : str or list
         variable to be plotted on x-axis
     x_ticks : str, optional
-
-    data_file : str, optional
-        path to data
     matplotlib_params : dict, optional
         parameters passed to matplotlib
     color_params : dict, optional
@@ -55,16 +51,16 @@ class Plot:
     def __init__(
         self,
         x_axis,
+        df,
+        label_params: dict[str, str],
         x_ticks="data",
-        data_file="/path/to/data",
         matplotlib_params=pp.matplotlib_params,
         color_params=pp.color_params,
         additional_params=pp.additional_params,
-        label_params=pp.label_params,
         time_scaling=1,
-        df=None,
         detailed_timers=True,
     ):
+
         self.x_axis = x_axis
         self.x_ticks = x_ticks
         self.matplotlib_params = matplotlib_params
@@ -74,160 +70,7 @@ class Plot:
         self.time_scaling = time_scaling
         self.df = df
         self.detailed_timers = detailed_timers
-        self.load_data(data_file)
         self.compute_derived_quantities()
-
-    def load_data(self, data_file):
-        """
-        Load data to dataframe, to be used later when plotting.
-
-        Group the data by specified operations.
-
-        Attributes
-        ----------
-        data_file : str
-            data file to be loaded and later plotted
-
-        Raises
-        ------
-        ValueError
-        """
-        if self.df is None:
-            try:
-                self.df = pd.read_csv(data_file, delimiter=",")
-            except FileNotFoundError:
-                print("File could not be found")
-                quit()
-
-        for py_timer in ["py_time_create", "py_time_connect"]:
-            if py_timer not in self.df:
-                self.df[py_timer] = np.nan
-                raise ValueError(
-                    "Warning! Python timers are not found. "
-                    + "Construction time measurements will not "
-                    + "be accurate."
-                )
-
-        dict_ = {
-            "num_nodes": "first",
-            "threads_per_task": "first",
-            "tasks_per_node": "first",
-            "model_time_sim": "first",
-            "time_construction_create": ["mean", "std"],
-            "time_construction_connect": ["mean", "std"],
-            "time_simulate": ["mean", "std"],
-            "time_collocate_spike_data": ["mean", "std"],
-            "time_communicate_spike_data": ["mean", "std"],
-            "time_deliver_spike_data": ["mean", "std"],
-            # 'time_update': ['mean', 'std'],
-            "time_communicate_target_data": ["mean", "std"],
-            "time_gather_spike_data": ["mean", "std"],
-            "time_gather_target_data": ["mean", "std"],
-            "time_communicate_prepare": ["mean", "std"],
-            "py_time_create": ["mean", "std"],
-            "py_time_connect": ["mean", "std"],
-            "base_memory": ["mean", "std"],
-            "network_memory": ["mean", "std"],
-            "init_memory": ["mean", "std"],
-            "total_memory": ["mean", "std"],
-            "num_connections": ["mean", "std"],
-            "local_spike_counter": ["mean", "std"],
-        }
-
-        # col = [
-        #     "num_nodes",
-        #     "threads_per_task",
-        #     "tasks_per_node",
-        #     "model_time_sim",
-        #     "time_construction_create",
-        #     "time_construction_create_std",
-        #     "time_construction_connect",
-        #     "time_construction_connect_std",
-        #     "time_simulate",
-        #     "time_simulate_std",
-        #     "time_communicate_prepare",
-        #     "time_communicate_prepare_std",
-        #     "py_time_create",
-        #     "py_time_create_std",
-        #     "py_time_connect",
-        #     "py_time_connect_std",
-        #     "base_memory",
-        #     "base_memory_std",
-        #     "network_memory",
-        #     "network_memory_std",
-        #     "init_memory",
-        #     "init_memory_std",
-        #     "total_memory",
-        #     "total_memory_std",
-        #     "num_connections",
-        #     "num_connections_std",
-        #     "local_spike_counter",
-        #     "local_spike_counter_std",
-        # ]
-
-        if self.detailed_timers:
-            dict_.update(
-                {
-                    "time_collocate_spike_data": ["mean", "std"],
-                    "time_communicate_spike_data": ["mean", "std"],
-                    "time_deliver_spike_data": ["mean", "std"],
-                    # 'time_update_spike_data': ['mean', 'std'],
-                    "time_communicate_target_data": ["mean", "std"],
-                    "time_gather_spike_data": ["mean", "std"],
-                    "time_gather_target_data": ["mean", "std"],
-                }
-            )
-
-            # col = [
-            #     "num_nodes",
-            #     "threads_per_task",
-            #     "tasks_per_node",
-            #     "model_time_sim",
-            #     "time_construction_create",
-            #     "time_construction_create_std",
-            #     "time_construction_connect",
-            #     "time_construction_connect_std",
-            #     "time_simulate",
-            #     "time_simulate_std",
-            #     "time_collocate_spike_data",
-            #     "time_collocate_spike_data_std",
-            #     "time_communicate_spike_data",
-            #     "time_communicate_spike_data_std",
-            #     "time_deliver_spike_data",
-            #     "time_deliver_spike_data_std",
-            #     # 'time_update_spike_data',
-            #     # 'time_update_spike_data_std',
-            #     "time_communicate_target_data",
-            #     "time_communicate_target_data_std",
-            #     "time_gather_spike_data",
-            #     "time_gather_spike_data_std",
-            #     "time_gather_target_data",
-            #     "time_gather_target_data_std",
-            #     "time_communicate_prepare",
-            #     "time_communicate_prepare_std",
-            #     "py_time_create",
-            #     "py_time_create_std",
-            #     "py_time_connect",
-            #     "py_time_connect_std",
-            #     "base_memory",
-            #     "base_memory_std",
-            #     "network_memory",
-            #     "network_memory_std",
-            #     "init_memory",
-            #     "init_memory_std",
-            #     "total_memory",
-            #     "total_memory_std",
-            #     "num_connections",
-            #     "num_connections_std",
-            #     "local_spike_counter",
-            #     "local_spike_counter_std",
-            # ]
-
-        self.df = (
-            self.df.drop("rng_seed", axis=1)
-            .groupby(["num_nodes", "threads_per_task", "tasks_per_node", "model_time_sim"], as_index=False)
-            .agg(dict_)
-        )
 
     def compute_derived_quantities(self):
         "Do computations to get parameters needed for plotting."
@@ -391,34 +234,3 @@ class Plot:
         if log[1]:
             axis.tick_params(bottom=False, which="minor")
             axis.set_yscale("log")
-
-    def merge_legends(self, ax1, ax2):
-        """
-        Merge legends from two axes, display them in the first.
-
-        Attributes
-        ----------
-        ax1 : axes object
-            first axis
-        ax2 : axes object
-            second axis
-        """
-        handles, labels = [(a + b) for a, b in zip(ax2.get_legend_handles_labels(), ax1.get_legend_handles_labels())]
-        ax1.legend(handles, labels, loc="upper right")
-
-    def simple_axis(self, ax):
-        """
-        Remove top and right spines.
-
-        Attributes
-        ----------
-        ax : axes object
-            axes object for which to adjust spines
-        """
-        # Hide the right and top spines
-        ax.spines["right"].set_visible(False)
-        ax.spines["top"].set_visible(False)
-
-        # Only show ticks on the left and bottom spines
-        ax.yaxis.set_ticks_position("left")
-        ax.xaxis.set_ticks_position("bottom")

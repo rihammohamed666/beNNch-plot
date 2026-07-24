@@ -5,6 +5,8 @@ import numpy as np
 from matplotlib import gridspec
 
 import bennch.plot.bennchplot as bp
+from bennch.plot.io.csv import load_data
+from bennch.plot.mpltools import simple_axis
 
 # import matplotlib.transforms as mtransforms
 
@@ -12,9 +14,13 @@ PATH = "/home/mohamed/pythontest/results_file"  # with jemalloc
 FILENAME_SAVE = "NEST-v3.9-rc1_Microcircuit_DOCS_0923.png"
 BENCHMARK_MODEL = "microcircuit"
 
-print("before plot")
-B = bp.Plot(data_file=PATH, x_axis=["num_nodes"], time_scaling=1e3, detailed_timers=False)
-print("after plot")
+B = bp.Plot(
+    df=load_data(PATH, aggregation={}),
+    x_axis=["num_nodes"],
+    time_scaling=1e3,
+    detailed_timers=False,
+    label_params={},
+)
 
 
 def plot_docs():
@@ -61,7 +67,7 @@ def plot_docs():
         pass  # Let the ylim creation automatic for potential other models
 
     ax1.margins(x=0)
-    B.simple_axis(ax1)
+    simple_axis(ax1)
 
     ax2 = fig.add_subplot(spec[0, 1])
 
@@ -95,7 +101,7 @@ def plot_docs():
     ax2.legend(handles2[::-1], labels2[::-1])
 
     ax2.margins(x=0)
-    B.simple_axis(ax2)
+    simple_axis(ax2)
 
     # ax1.text(0.0, 1.0, 'A', transform=ax1.transAxes + trans,
     #         fontsize='medium', va='bottom', fontweight='bold')

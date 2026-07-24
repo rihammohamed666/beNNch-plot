@@ -21,6 +21,8 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 
 from bennch.plot.bennchplot import Plot
+from bennch.plot.io.csv import load_data
+from bennch.plot.mpltools import merge_legends
 
 # define what to plot:
 # - data_file:
@@ -33,10 +35,14 @@ from bennch.plot.bennchplot import Plot
 #     simulation. Usually, the former is given in s while
 #     the latter is given in ms.
 
-args = {"data_file": "8d196bc5-b5f5-448b-8571-bf695ed64d4a.csv", "x_axis": ["num_nvp"], "time_scaling": 1e3}
 
 # Figure layout
-B = Plot(**args)
+B = Plot(
+    df=load_data("8d196bc5-b5f5-448b-8571-bf695ed64d4a.csv", aggregation={}),
+    x_axis=["num_nvp"],
+    time_scaling=1e3,
+    label_params={},
+)
 
 # Plotting
 widths = [1]
@@ -58,7 +64,7 @@ B.plot_fractions(
 ax1.set_ylabel(r"$T_{\mathrm{wall}}$ [s] for $T_{\mathrm{model}} =$" + f"{np.unique(B.df.model_time_sim.values)[0]} s")
 ax1.set_xlabel("Number of virtual processes")
 ax2.set_ylabel(r"relative $T_{\mathrm{wall}}$ [%]")
-B.merge_legends(ax1, ax2)
+merge_legends(ax1, ax2)
 
 # Save figure
 plt.savefig("scaling.pdf")

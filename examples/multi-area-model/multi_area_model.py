@@ -21,6 +21,8 @@ from matplotlib import gridspec
 from matplotlib import pyplot as plt
 
 from bennch.plot.bennchplot import Plot
+from bennch.plot.io.csv import load_data
+from bennch.plot.mpltools import simple_axis
 
 # define what to plot:
 # - data_file:
@@ -33,11 +35,14 @@ from bennch.plot.bennchplot import Plot
 #     simulation. Usually, the former is given in s while
 #     the latter is given in ms.
 
-args = {"data_file": "45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", "x_axis": ["num_nodes"], "time_scaling": 1e3}
-
 
 # Instantiate class
-B = Plot(**args)
+B = Plot(
+    df=load_data("45011f6d-c3c2-4f2c-b884-af04e9edc5b9.csv", aggregation={}),
+    x_axis=["num_nodes"],
+    time_scaling=1e3,
+    label_params={},
+)
 
 # Figure layout
 widths = [1, 1]
@@ -71,8 +76,8 @@ B.plot_fractions(axis=ax3, fill_variables=["frac_phase_communicate", "frac_phase
 
 # Set labels, limits etc.
 ax2.set_ylim(0, 300)
-B.simple_axis(ax1)
-B.simple_axis(ax2)
+simple_axis(ax1)
+simple_axis(ax2)
 
 ax1.set_xlabel("Number of nodes")
 ax1.set_ylabel(r"$T_{\mathrm{wall}}$ [s] for $T_{\mathrm{model}} =$" + f"{np.unique(B.df.model_time_sim.values)[0]} s")
