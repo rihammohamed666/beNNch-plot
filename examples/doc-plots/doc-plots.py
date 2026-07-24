@@ -6,16 +6,16 @@ from enum import StrEnum, auto
 from io import TextIOWrapper
 from pathlib import Path
 
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.transforms as mtransforms
 import numpy as np
-import pandas as pd
 import rich_click as click
-from bennchplot import Plot, __version__
-from bennchplot.io.config import loadConfig
-from bennchplot.io.tarball import get_variable_value
 from matplotlib import gridspec
+
+from bennch.plot.bennchplot import Plot
+from bennch.plot.io.config import loadConfig
+from bennch.plot.io.tarball import get_variable_value
+
+# import matplotlib.transforms as mtransforms
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -62,7 +62,8 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
 
     ax1 = fig.add_subplot(spec[0, 0])
 
-    trans = mtransforms.ScaledTranslation(-20 / 72, 7 / 72, fig.dpi_scale_trans)
+    # trans = mtransforms.ScaledTranslation(-20 / 72, 7 / 72,
+    # fig.dpi_scale_trans)
 
     bplot.plot_fractions(
         axis=ax1,
@@ -83,7 +84,8 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     handles1, labels1 = ax1.get_legend_handles_labels()
     ax1.legend(handles1[::-1], labels1[::-1])
 
-    # Set the ylim for benchmark plots to make different runs of same model visually comparable
+    # Set the ylim for benchmark plots to make different runs of same model
+    # visually comparable
     if model == ModelType.microcircuit:
         ax1.set_ylim(0, 15)
     elif model == ModelType.hpc_benchmark:
@@ -111,7 +113,8 @@ def plot_docs(csvfile: TextIOWrapper, model: ModelType, output: Path) -> None:
     automatic_xlim = ax2.get_xlim()
     ax2.set_xlim(automatic_xlim[0], automatic_xlim[1])
 
-    # Set the ylim for benchmark plots to make different runs of same model visually comparable
+    # Set the ylim for benchmark plots to make different runs of same model
+    # visually comparable
     if model == ModelType.microcircuit:
         ax2.set_ylim(0, 1.0)
         # explicitly show realtime factor of 1

@@ -91,7 +91,8 @@ class XDG:
         """
         Non-essential local user-specific session files $XDG_RUNTIME_DIR.
 
-        Used for non-essential, user-specific data files such as sockets, named pipes, etc.
+        Used for non-essential, user-specific data files such as sockets, named
+        pipes, etc.
 
         Not required to have a default value; warnings should be issued if not
         set or equivalents provided.
@@ -127,17 +128,17 @@ class XDG:
 
         Note
         ----
-            There is NO `$XDG_BIN_HOME` directory `$HOME/.local` is intended to
-            be analogous to `/usr/local`.
+        There is NO `$XDG_BIN_HOME` directory `$HOME/.local` is intended to be
+        analogous to `/usr/local`.
 
         Note
         ----
-            Since $HOME might be shared between systems of different
-            architectures, installing compiled binaries to `$HOME/.local/bin`
-            could cause problems when used on systems of differing
-            architectures. This is often not a problem, but the fact that `$HOME`
-            becomes partially architecture-specific if compiled binaries are
-            placed in it should be kept in mind.
+        Since $HOME might be shared between systems of different architectures,
+        installing compiled binaries to `$HOME/.local/bin` could cause problems
+        when used on systems of differing architectures. This is often not a
+        problem, but the fact that `$HOME` becomes partially
+        architecture-specific if compiled binaries are placed in it should be
+        kept in mind.
         """
         return Path(os.environ.get("XDG_BIN_HOME", os.path.expandvars("$HOME/.local/bin")))
 

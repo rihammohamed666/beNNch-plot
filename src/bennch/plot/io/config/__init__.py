@@ -3,8 +3,8 @@
 import logging
 from pathlib import Path
 
-from bennchplot.io import yaml
-from bennchplot.io.config.models import Config
+from bennch.plot.io import yaml
+from bennch.plot.io.config.models import Config
 
 log = logging.getLogger(__name__)
 

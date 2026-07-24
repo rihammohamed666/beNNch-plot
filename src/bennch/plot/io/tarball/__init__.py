@@ -3,7 +3,7 @@
 import logging
 from subprocess import check_call
 
-from bennchplot.io.config.models import SourceConfig, VarConfig
+from bennch.plot.io.config.models import SourceConfig, VarConfig
 
 log = logging.getLogger(__name__)
 

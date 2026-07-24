@@ -11,20 +11,18 @@
 # Save as plot_page_faults.py and run with: python plot_page_faults.py
 import logging
 import re
-import sys
 from argparse import ArgumentParser
 from dataclasses import dataclass, field
 from pathlib import Path
-from pprint import pformat
 
-import docopt
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-from scipy.stats import gaussian_kde
-from tqdm import tqdm
+from rich.progress import track
+
+# from scipy.stats import gaussian_kde
 
 cm = 1 / 2.54
 
@@ -86,15 +84,25 @@ def find_recordings(basepath: Path) -> list[Path]:
     "Locate bad version of kernel status written via print."
     return list(
         basepath.glob(
-            #            "jube_results/000000/000*_bench/work/data/*/recordings/"
-            #            "000*_bench/work/data/*/recordings/"
+            # "jube_results/000000/000*_bench/work/data/*/recordings/"
+            # "000*_bench/work/data/*/recordings/"
             "**"
         )
     )
 
 
 def find_logs(recording: Path, data_type: str) -> list[Path]:
-    "Locate log files in recordings of types: logfile, cycle_time_log, page_faults_log."
+    """
+    Locate log files in recordings.
+
+    Parameters
+    ----------
+    recording: Path
+        Path to an extracted tarball.
+    data_type: str
+        filename base glob to search for, examples: "logfile",
+        "cycle_time_log", "page_faults_log", etc.
+    """
     return list(recording.glob(f"*{data_type}*"))
 
 
@@ -121,15 +129,15 @@ def load(path: Path):
             data.ct_logfiles.extend(find_logs(p, "cycle_time_log"))
             data.pf_logfiles.extend(find_logs(p, "page_faults_log"))
 
-    # The files in the two log lists have an arbitray order.
-    # For later correlation analysis we better sort them such that corresponding
-    # entries in the two lists refer to the same rank. We achieve this by sorting
-    # both lists according to rank
+    # The files in the two log lists have an arbitray order.  For later
+    # correlation analysis we better sort them such that corresponding entries
+    # in the two lists refer to the same rank. We achieve this by sorting both
+    # lists according to rank
 
     data.ct_logfiles = sorted(data.ct_logfiles, key=get_rank)
     data.pf_logfiles = sorted(data.pf_logfiles, key=get_rank)
 
-    for idx, f in tqdm(enumerate(data.ct_logfiles), total=len(data.ct_logfiles)):
+    for idx, f in track(enumerate(data.ct_logfiles), total=len(data.ct_logfiles)):
         with open(f, "r") as fl:
             ctdata = np.loadtxt(fl)
         data.cycle_time_dict[idx] = ctdata[:, 0] * 1000 - ctdata[:, 1] * 1000  # without communicate time and in ms
@@ -143,8 +151,8 @@ def load(path: Path):
     sim_model = len(data.sim_time_dict[0]) - presim_model
     sim_start_2ndhalf = sim_model // 2
 
-    t_wall = 0
-    t_wall_2ndhalf = 0
+    t_wall: float = 0
+    t_wall_2ndhalf: float = 0
     n = len(data.sim_time_dict)
     for t in data.sim_time_dict.values():
         t_wall += sum(t[presim_model:])
@@ -157,7 +165,7 @@ def load(path: Path):
     # print(t_wall/10000)
     # print(t_wall_2ndhalf/5000)
 
-    for idx, f in tqdm(enumerate(data.pf_logfiles), total=len(data.pf_logfiles)):
+    for idx, f in track(enumerate(data.pf_logfiles), total=len(data.pf_logfiles)):
         data.minor_pf_dict[idx] = {}
         if f.is_file():
             with f.open(encoding="utf-8", mode="r") as fl:
@@ -165,9 +173,9 @@ def load(path: Path):
                     for key in label_array:
                         if line.strip().startswith(key):
                             split = line.split(" ")
-                            label = label_dict[split[0].strip()]
+                            # label = label_dict[split[0].strip()]
                             minor_pf = int(split[1].strip())
-                            major_pf = int(split[2].strip())
+                            # major_pf = int(split[2].strip())
 
                             data.minor_pf_dict[idx][key] = minor_pf
     log.info("loading complete.")
@@ -206,7 +214,7 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     ticks = np.arange(pre_sim, steps[-1] + pre_sim, 10000)
     ax.set_xticks(ticks)
-    ax.set_xticklabels([f"{int((t-pre_sim)/10000):d}" for t in ticks], rotation=0)
+    ax.set_xticklabels([f"{int((t-pre_sim)/10000):d}" for t in ticks], rotation=0)  # type: ignore[operator]
     ax.tick_params(axis="y", labelrotation=0)
     ax.tick_params(axis="both", which="major", labelsize=fontsize)
 
@@ -258,7 +266,7 @@ def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> Non
     plt.figure(figsize=(10 * cm, 6.5 * cm))
     counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000, density=True, color="limegreen")
 
-    bin_centers = (bins[1:] + bins[:-1]) / 2
+    # bin_centers = (bins[1:] + bins[:-1]) / 2
 
     n_cycle_times = len(cycle_time_concat)
     n_cycle_times_considered = len(cycle_time_concat[mask])
@@ -270,11 +278,12 @@ def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> Non
     mean_ = np.around(np.mean(cycle_time_concat), 2)
     max_ = np.around(np.max(cycle_time_concat), 2)
 
-    # this keeps the green area covered by the distributions the same visual size
+    # this keeps the green area covered by the distributions the same visual
+    # size
     ylim = 2.5 * data.mpi_processes / 16
 
     plt.ylim(0, ylim)
-    plt.xlim([0, cutoff])
+    plt.xlim(0, cutoff)
 
     plt.title(f"min {min_}, mean {mean_}, max {max_}", fontsize=fontsize)
     plt.xlabel("cycle time (ms)", fontsize=fontsize)
@@ -364,7 +373,7 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
 
     # Overall average line
 
-    plt.legend(fontsize=5)
+    plt.legend(fontsize=5)  # type: ignore[call-arg]  # unexpected keyword argument??
 
     plt.tight_layout()
 
@@ -409,7 +418,7 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
 
 
 def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png"):
-    "Make a page-faults vs. cycle-times plot of the extracted data and plot it."
+    "Make a page-faults vs. cycle-times plot."
     log.info("ploting page faults against cycle_times")
     cycle_times = data.cycle_time_dict
     minor_pfs = data.minor_pf_dict
@@ -510,7 +519,7 @@ def correlation_spikes_plot(data, filename: str = "plot.png"):
     s = s[::d]
     c = c[::d]
 
-    sc = np.vstack([s, c])
+    # sc = np.vstack([s, c])
     #    z = gaussian_kde(sc)(sc)
     #    z = gaussian_kde(sc,bw_method=0.001)(sc)
 
@@ -521,7 +530,7 @@ def correlation_spikes_plot(data, filename: str = "plot.png"):
     #    plt.figure(figsize=(15, 8))
     fig, ax = plt.subplots()
     #    a = ax.scatter(x, y, c=z, s=5, cmap='viridis')
-    a = ax.scatter(s, c, c="orange", s=1)
+    ax.scatter(s, c, c="orange", s=1)
 
     #    plt.colorbar(a, label='Point Density')
     plt.ylabel("cycle time in ms")
@@ -547,7 +556,7 @@ def correlation_spikes_plot(data, filename: str = "plot.png"):
     log.info("saved as %s", filename)
 
 
-def cycletime_vs_spikecount(data, rtf, filename: str = "plot.png"):
+def cycletime_vs_spikecount(data, rtf, filename: str | Path = "plot.png"):
     "Make a spike-count vs. cycle-time plot of the extracted data and plot it."
     spike_counter_concat = npconcat(data.spike_counter_dict)
     cycle_time_concat = npconcat(data.cycle_time_dict)
@@ -670,16 +679,20 @@ def main():
     output_pf = output_path / f"{uuid}_{output_name}_page_faults.png"
     output_ct = output_path / f"{uuid}_{output_name}_cycle_times.png"
 
-    output_ct_corr = output_path / f"{output_name}_cycle_times_correlation.png"
-    output_ct_pf = output_path / f"{output_name}_cycletimes_pagefaults.png"
+    # output_ct_corr = output_path/f"{output_name}_cycle_times_correlation.png"
+    # output_ct_pf = output_path / f"{output_name}_cycletimes_pagefaults.png"
 
-    heatmap(data, rtf, cutoff=float(cutoff), filename=output_ct_heatmap)
+    heatmap(data, rtf, cutoff=float(cutoff), filename=str(output_ct_heatmap))
     cycletime_vs_spikecount(data, rtf, output_ct_corr_hist)
-    page_faults_plot(data, rtf, filename=output_pf, machine_name=machine)
+    page_faults_plot(data, rtf, filename=str(output_pf), machine_name=machine)
 
-    cycle_times(data, rtf, cutoff=float(cutoff), filename=output_ct)
+    cycle_times(data, rtf, cutoff=float(cutoff), filename=str(output_ct))
 
-    #    pagefaults_vs_cycletime_plot(data, filename=output_ct_pf, machine_name=machine)
+    # pagefaults_vs_cycletime_plot(
+    #    data,
+    #    filename=output_ct_pf,
+    #    machine_name=machine
+    # )
 
     print(output_ct_heatmap)
 

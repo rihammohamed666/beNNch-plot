@@ -1,4 +1,6 @@
 """
+Class organizing benchmarking plots.
+
 beNNch-plot - standardized plotting routines for performance benchmarks.
 
 Copyright (C) 2021 Forschungszentrum Juelich GmbH, INM-6
@@ -16,22 +18,14 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-"""
-Class for benchmarking plots
-"""
-import os
-
 import matplotlib
 import numpy as np
 import pandas as pd
-import yaml
-from matplotlib import gridspec
-from matplotlib import pyplot as plt
 
 try:
     from . import plot_params as pp
 except ImportError:
-    import plot_params as pp
+    import bennch.plot.plot_params as pp
 
 
 class Plot:
@@ -140,36 +134,36 @@ class Plot:
             "local_spike_counter": ["mean", "std"],
         }
 
-        col = [
-            "num_nodes",
-            "threads_per_task",
-            "tasks_per_node",
-            "model_time_sim",
-            "time_construction_create",
-            "time_construction_create_std",
-            "time_construction_connect",
-            "time_construction_connect_std",
-            "time_simulate",
-            "time_simulate_std",
-            "time_communicate_prepare",
-            "time_communicate_prepare_std",
-            "py_time_create",
-            "py_time_create_std",
-            "py_time_connect",
-            "py_time_connect_std",
-            "base_memory",
-            "base_memory_std",
-            "network_memory",
-            "network_memory_std",
-            "init_memory",
-            "init_memory_std",
-            "total_memory",
-            "total_memory_std",
-            "num_connections",
-            "num_connections_std",
-            "local_spike_counter",
-            "local_spike_counter_std",
-        ]
+        # col = [
+        #     "num_nodes",
+        #     "threads_per_task",
+        #     "tasks_per_node",
+        #     "model_time_sim",
+        #     "time_construction_create",
+        #     "time_construction_create_std",
+        #     "time_construction_connect",
+        #     "time_construction_connect_std",
+        #     "time_simulate",
+        #     "time_simulate_std",
+        #     "time_communicate_prepare",
+        #     "time_communicate_prepare_std",
+        #     "py_time_create",
+        #     "py_time_create_std",
+        #     "py_time_connect",
+        #     "py_time_connect_std",
+        #     "base_memory",
+        #     "base_memory_std",
+        #     "network_memory",
+        #     "network_memory_std",
+        #     "init_memory",
+        #     "init_memory_std",
+        #     "total_memory",
+        #     "total_memory_std",
+        #     "num_connections",
+        #     "num_connections_std",
+        #     "local_spike_counter",
+        #     "local_spike_counter_std",
+        # ]
 
         if self.detailed_timers:
             dict_.update(
@@ -184,50 +178,50 @@ class Plot:
                 }
             )
 
-            col = [
-                "num_nodes",
-                "threads_per_task",
-                "tasks_per_node",
-                "model_time_sim",
-                "time_construction_create",
-                "time_construction_create_std",
-                "time_construction_connect",
-                "time_construction_connect_std",
-                "time_simulate",
-                "time_simulate_std",
-                "time_collocate_spike_data",
-                "time_collocate_spike_data_std",
-                "time_communicate_spike_data",
-                "time_communicate_spike_data_std",
-                "time_deliver_spike_data",
-                "time_deliver_spike_data_std",
-                # 'time_update_spike_data',
-                # 'time_update_spike_data_std',
-                "time_communicate_target_data",
-                "time_communicate_target_data_std",
-                "time_gather_spike_data",
-                "time_gather_spike_data_std",
-                "time_gather_target_data",
-                "time_gather_target_data_std",
-                "time_communicate_prepare",
-                "time_communicate_prepare_std",
-                "py_time_create",
-                "py_time_create_std",
-                "py_time_connect",
-                "py_time_connect_std",
-                "base_memory",
-                "base_memory_std",
-                "network_memory",
-                "network_memory_std",
-                "init_memory",
-                "init_memory_std",
-                "total_memory",
-                "total_memory_std",
-                "num_connections",
-                "num_connections_std",
-                "local_spike_counter",
-                "local_spike_counter_std",
-            ]
+            # col = [
+            #     "num_nodes",
+            #     "threads_per_task",
+            #     "tasks_per_node",
+            #     "model_time_sim",
+            #     "time_construction_create",
+            #     "time_construction_create_std",
+            #     "time_construction_connect",
+            #     "time_construction_connect_std",
+            #     "time_simulate",
+            #     "time_simulate_std",
+            #     "time_collocate_spike_data",
+            #     "time_collocate_spike_data_std",
+            #     "time_communicate_spike_data",
+            #     "time_communicate_spike_data_std",
+            #     "time_deliver_spike_data",
+            #     "time_deliver_spike_data_std",
+            #     # 'time_update_spike_data',
+            #     # 'time_update_spike_data_std',
+            #     "time_communicate_target_data",
+            #     "time_communicate_target_data_std",
+            #     "time_gather_spike_data",
+            #     "time_gather_spike_data_std",
+            #     "time_gather_target_data",
+            #     "time_gather_target_data_std",
+            #     "time_communicate_prepare",
+            #     "time_communicate_prepare_std",
+            #     "py_time_create",
+            #     "py_time_create_std",
+            #     "py_time_connect",
+            #     "py_time_connect_std",
+            #     "base_memory",
+            #     "base_memory_std",
+            #     "network_memory",
+            #     "network_memory_std",
+            #     "init_memory",
+            #     "init_memory_std",
+            #     "total_memory",
+            #     "total_memory_std",
+            #     "num_connections",
+            #     "num_connections_std",
+            #     "local_spike_counter",
+            #     "local_spike_counter_std",
+            # ]
 
         self.df = (
             self.df.drop("rng_seed", axis=1)

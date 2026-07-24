@@ -1,10 +1,10 @@
 "UUID set management modules."
 
 import logging
-import os
 
 import git
-from bennchplot.config import XDG
+
+from bennch.plot.config import XDG
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -27,7 +27,7 @@ class SetsData:
         "Initialize a new repository."
         self._path.mkdir(parents=True, exist_ok=True)
         log.debug("Using UUID sets from %s", self._path)
-        with git.repo(self._path) as repo:
+        with git.Repo(self._path) as repo:
             repo.init()
 
     def sync(self) -> None:

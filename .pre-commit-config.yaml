@@ -45,23 +45,28 @@ repos:
     hooks:
       - id: mypy
         additional_dependencies: &TESTDEPS
-          - jinja2
+          - "GitPython>=3"
+          - 'GitPython>=3'
+          - "matplotlib"
           - 'matplotlib-stubs'
+          - "pandas"
           - 'pandas-stubs'
-          - pydantic
-          - pylint-pydantic
-          - pytest
-          - 'python-configuration[yaml]' # [tokenize-rt==3.2.0]
-          - python-dateutil
-          - python-gitlab
-          - rich_click
-          - ruamel.yaml
-          - seaborn
-          - semver
-          - types-python-dateutil
+          - "pydantic"
+          - 'pydantic'
+          - 'pylint-pydantic'
+          - 'pytest'
+          - 'python-dateutil'
+          - "rich_click"
+          - "rich_click"
+          - "ruamel.yaml"
+          - "ruamel.yaml"
+          - "seaborn"
+          - "semver"
+          - "tol_colors"
+          - "types-python-dateutil"
           - 'types-requests'
-          - 'types-tqdm'
-        args: [--python-version=3.11]
+          - 'types-seaborn'
+        args: ["--python-version=3.11", "--explicit-package-bases"]
 
   - repo: https://github.com/PyCQA/pylint
     rev: v4.0.5

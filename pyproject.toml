@@ -14,14 +14,13 @@ authors = [
 ]
 requires-python = ">=3.11"  # for enum.StrEnum
 dependencies = [
-    "pandas",
-    "matplotlib",
-    "pyyaml",
-    "tol_colors" ,
-    "pydantic",
-    "ruamel.yaml",
-    "rich_click",
     "GitPython>=3",
+    "matplotlib",
+    "pandas",
+    "pydantic",
+    "rich_click",
+    "ruamel.yaml",
+    "tol_colors",
 ]
 
 [metadata]
@@ -35,8 +34,8 @@ classifiers = [
 
 [project.optional-dependencies]
 dev = [
-    "pre-commit",
     "bump-my-version",
+    "pre-commit",
 ]
 
 [project.urls]

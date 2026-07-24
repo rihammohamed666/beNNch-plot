@@ -3,22 +3,12 @@
 
 import logging
 import sys
-from enum import StrEnum, auto
-from io import TextIOWrapper
-from pathlib import Path
-from subprocess import check_call
 
-import matplotlib as mpl
-import matplotlib.pyplot as plt
-import matplotlib.transforms as mtransforms
-import numpy as np
-import pandas as pd
 import rich_click as click
 from bennch.io import yaml
-from bennchplot import Plot
-from bennchplot.config import XDG
-from bennchplot.io.git import SetsData
-from matplotlib import gridspec
+
+from bennch.plot.config import XDG
+from bennch.plot.io.git import SetsData
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)

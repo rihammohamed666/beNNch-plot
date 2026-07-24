@@ -1,4 +1,6 @@
 """
+Default parameters for plotting.
+
 beNNch-plot - standardized plotting routines for performance benchmarks.
 
 Copyright (C) 2021 Forschungszentrum Juelich GmbH, INM-6
@@ -16,9 +18,6 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
-"""
-Default parameters for plotting
-"""
 import tol_colors
 
 size_factor = 1.3
