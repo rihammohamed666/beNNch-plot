@@ -171,6 +171,12 @@ load-plugins = [
     "pylint_pydantic",
 ]
 
+[tool.pylint.master]
+# The pylint resolver doesn't seem to handle namespace packages in src layout.
+# AI suggested to explicitly add the sys.path to avoid confusion between src/
+# and namespace/.
+init-hook='import sys; from pathlib import Path; sys.path.insert(0, str(Path().resolve() / "src"))'
+
 
 # PyCodeStyle
 # config see https://pycodestyle.pycqa.org/en/latest/intro.html
