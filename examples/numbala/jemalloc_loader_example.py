@@ -216,7 +216,7 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     ticks = np.arange(pre_sim, steps[-1] + pre_sim, 10000)
     ax.set_xticks(ticks)
-    ax.set_xticklabels([f"{int((t-pre_sim)/10000):d}" for t in ticks], rotation=0)  # type: ignore[operator]
+    ax.set_xticklabels([f"{int((t - pre_sim) / 10000):d}" for t in ticks], rotation=0)  # type: ignore[operator]
     ax.tick_params(axis="y", labelrotation=0)
     ax.tick_params(axis="both", which="major", labelsize=fontsize)
 

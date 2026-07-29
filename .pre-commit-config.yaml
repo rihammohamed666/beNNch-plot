@@ -54,6 +54,7 @@ repos:
           - "pylint-pydantic"
           - "pytest"
           - "python-dateutil"
+          - "numpy <2.5"
           - "rich_click"
           - "ruamel.yaml"
           - "seaborn"

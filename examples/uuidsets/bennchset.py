@@ -5,9 +5,9 @@ import logging
 import sys
 
 import rich_click as click
-from bennch.io import yaml
 
 from bennch.plot.config import XDG
+from bennch.plot.io import yaml
 from bennch.plot.io.git import SetsData
 
 if __name__ == "__main__":
