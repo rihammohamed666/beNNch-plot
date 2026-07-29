@@ -20,13 +20,14 @@ class SetsData:
     def __init__(self):
         log.debug("SetsData")
         self._path = XDG("bennchplot/sets").data_home
+        log.debug("BeNNch SetsData cache location: %s (exists: %s)", self._path, self._path.exists())
 
     def init(self):
         "Initialize a new repository."
+        log.debug("creating SetsData cache: %s (exists: %s)", self._path, self._path.exists())
         self._path.mkdir(parents=True, exist_ok=True)
-        log.debug("Using UUID sets from %s", self._path)
-        with git.Repo(self._path) as repo:
-            repo.init()
+        log.debug("(re-)initializing git repository…")
+        git.Repo.init(self._path)
 
     def sync(self) -> None:
         "Make sure the default remote knows everything and we're uptodate."

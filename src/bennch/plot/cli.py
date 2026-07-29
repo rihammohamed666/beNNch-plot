@@ -7,15 +7,15 @@ from pathlib import Path
 import rich_click as click
 
 from bennch.plot.io.config import load_config
+from bennch.plot.io.git import SetsData
 from bennch.plot.io.tarball import get_variable_value
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
 
 # import matplotlib.transforms as mtransforms
 
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
-log = logging.getLogger("__main__")
+logging.basicConfig(level=logging.DEBUG)
+log = logging.getLogger(__name__)
 
 
 @click.group()
@@ -35,6 +35,19 @@ def cli_get_var(uuid: str, var_name: str) -> None:
     "Get the triggering pipeline ID of the given simulation."
     config = load_config()
     get_variable_value(uuid, config.vars[var_name], config.source)
+
+
+@cli.group("cache")
+def cli_cache():
+    "UUID sets cache handling."
+
+
+@cli_cache.command("init")
+def cli_cache_init():
+    "Initialize the cache directory."
+    sets = SetsData()
+    sets.init()
+    log.debug("cache init done")
 
 
 @cli.command("scaling")
