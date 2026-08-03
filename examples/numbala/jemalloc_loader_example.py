@@ -183,7 +183,7 @@ def load(path: Path):
     return data
 
 
-def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
+def heatmap(data, rtf, cutoff_factor: float = 2, filename: str = "plot.png") -> None:
     "Make a heatmap from extracted data and plot it."
     pre_sim = 5000
     fontsize = 8
@@ -192,11 +192,11 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
     procs = np.arange(0, int(data.mpi_processes), 1)
     htmap = np.zeros((len(steps), len(procs)))
 
-    cutoff = int(round(cutoff * 16 / data.mpi_processes))
+    cutoff_value = int(round(cutoff_factor * 16 / data.mpi_processes))  # 1 cutoff value and 2 cutoff factor
     print("cutoff = " + str(cutoff))
 
     for idx, key in enumerate(data.cycle_time_dict.keys()):
-        htmap[:, idx] = np.clip(data.cycle_time_dict[key], a_min=0, a_max=cutoff)
+        htmap[:, idx] = np.clip(data.cycle_time_dict[key], a_min=0, a_max=cutoff_value)
 
     # [X, Y] = np.meshgrid(steps, procs)
     np.meshgrid(steps, procs)
@@ -209,7 +209,7 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     ax = sns.heatmap(htmap.T)
     mappable = ax.collections[0]
-    mappable.set_clim(1, cutoff)
+    mappable.set_clim(1, cutoff_value)
 
     ax.set_xlabel("cycle / 10,000", fontsize=fontsize)
     ax.set_ylabel("rank", fontsize=fontsize)
@@ -222,7 +222,7 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
 
     cbar = mappable.colorbar
     cbar.update_normal(mappable)
-    cbar.set_ticks([int(1 + i) for i in range(cutoff)])
+    cbar.set_ticks([int(1 + i) for i in range(cutoff_value)])
     cbar.ax.tick_params(labelsize=fontsize)
 
     uuid = str(data.ct_logfiles[0].parts[0])
@@ -256,15 +256,15 @@ def heatmap(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
     plt.close(fig)
 
 
-def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> None:
+def cycle_times_function(data, rtf, cutoff_factor: float = 2, filename: str = "plot.png") -> None:
     "Make a cycle-times plot of the extracted data and plot it."
     fontsize = 8
 
-    cutoff = int(round(cutoff * 16 / data.mpi_processes))
-    print("cutoff = " + str(cutoff))
+    cutoff_value = int(round(cutoff_factor * 16 / data.mpi_processes))
+    print("cutoff = " + str(cutoff_value))
 
     cycle_time_concat = npconcat(data.cycle_time_dict)
-    mask = cycle_time_concat < cutoff
+    mask = cycle_time_concat < cutoff_value
     plt.figure(figsize=(10 * cm, 6.5 * cm))
     # counts, bins, patches = plt.hist(cycle_time_concat[mask], bins=1000,
     # density=True, color="limegreen")
@@ -287,7 +287,7 @@ def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> Non
     ylim = 2.5 * data.mpi_processes / 16
 
     plt.ylim(0, ylim)
-    plt.xlim(0, cutoff)
+    plt.xlim(0, cutoff_value)
 
     plt.title(f"min {min_}, mean {mean_}, max {max_}", fontsize=fontsize)
     plt.xlabel("cycle time (ms)", fontsize=fontsize)
@@ -686,11 +686,11 @@ def main():
     # output_ct_corr = output_path/f"{output_name}_cycle_times_correlation.png"
     # output_ct_pf = output_path / f"{output_name}_cycletimes_pagefaults.png"
 
-    heatmap(data, rtf, cutoff=float(cutoff), filename=str(output_ct_heatmap))
+    heatmap(data, rtf, cutoff_factor=float(cutoff), filename=str(output_ct_heatmap))
     cycletime_vs_spikecount(data, rtf, output_ct_corr_hist)
     page_faults_plot(data, rtf, filename=str(output_pf))
 
-    cycle_times(data, rtf, cutoff=float(cutoff), filename=str(output_ct))
+    cycle_times_function(data, rtf, cutoff_factor=float(cutoff), filename=str(output_ct))
 
     # pagefaults_vs_cycletime_plot(
     #    data,
