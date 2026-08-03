@@ -10,3 +10,7 @@ vars:
   GATHER_METADATA_VERS:
     path: 0*_bench/work/metadata/gather.json
     parser: "jq .version"
+
+  creation-time:
+    path: 0*_bench/work/data/logfile_0
+    parser: "grep -i py_time_connect"

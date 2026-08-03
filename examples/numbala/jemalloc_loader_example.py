@@ -341,7 +341,7 @@ def cycle_times(data, rtf, cutoff: float = 2, filename: str = "plot.png") -> Non
     plt.close()
 
 
-def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
+def page_faults_plot(data, rtf, filename: str = "plot.png"):
     "Make a page-faults plot of the extracted data and plot it."
     fontsize = 8
 
@@ -349,7 +349,7 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
 
     concat_data_presim = []
     concat_data_sim = []
-    for idx, dic in minor_pfs.items():
+    for dic in minor_pfs.items():
         for key, val in dic.items():
             # if key == "before_sim":
             if key == "presim_pf":
@@ -421,7 +421,7 @@ def page_faults_plot(data, rtf, machine_name, filename: str = "plot.png"):
     plt.close()
 
 
-def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png"):
+def pagefaults_vs_cycletime_plot(data, filename: str = "plot.png"):
     "Make a page-faults vs. cycle-times plot."
     log.info("ploting page faults against cycle_times")
     cycle_times = data.cycle_time_dict
@@ -430,7 +430,7 @@ def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png")
     t_presim = 500  # in ms
     delta_t = 0.1  # in ms
     total_presim_cycle_times = []
-    for idx, arr in cycle_times.items():
+    for idx in cycle_times.items():
         total_presim_cycle_times.append(np.sum(cycle_times[idx][: int(t_presim / delta_t)]))
 
     concat_data_presim = []
@@ -451,7 +451,7 @@ def pagefaults_vs_cycletime_plot(data, machine_name, filename: str = "plot.png")
 
     assert x.shape == y.shape, "presim_pf and totals_ms must have same length"
 
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     ax.scatter(x, y)
 
     # label each point with its rank index
@@ -532,7 +532,7 @@ def correlation_spikes_plot(data, filename: str = "plot.png"):
     #    x, y, z = s[i], c[i], z[i]
 
     #    plt.figure(figsize=(15, 8))
-    fig, ax = plt.subplots()
+    _, ax = plt.subplots()
     #    a = ax.scatter(x, y, c=z, s=5, cmap='viridis')
     ax.scatter(s, c, c="orange", s=1)
 
@@ -571,7 +571,7 @@ def cycletime_vs_spikecount(data, rtf, filename: str | Path = "plot.png"):
     x = spike_counter_concat[1:][::1]
     y = cycle_time_concat[:-1][::1]
 
-    H, xedges, yedges = np.histogram2d(x, y, bins=100, range=[[0, count_lim], [0, time_lim]])
+    H, _ = np.histogram2d(x, y, bins=100, range=[[0, count_lim], [0, time_lim]])
 
     fig, ax = plt.subplots()
 
@@ -688,7 +688,7 @@ def main():
 
     heatmap(data, rtf, cutoff=float(cutoff), filename=str(output_ct_heatmap))
     cycletime_vs_spikecount(data, rtf, output_ct_corr_hist)
-    page_faults_plot(data, rtf, filename=str(output_pf), machine_name=machine)
+    page_faults_plot(data, rtf, filename=str(output_pf))
 
     cycle_times(data, rtf, cutoff=float(cutoff), filename=str(output_ct))
 
