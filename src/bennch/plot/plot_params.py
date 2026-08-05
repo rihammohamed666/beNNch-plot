@@ -20,18 +20,18 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 import tol_colors
 
-size_factor = 1.3
+SIZE_FACTOR = 1.3
 matplotlib_params = {
     "text.latex.preamble": ["\\usepackage{gensymb}"],
     "image.origin": "lower",
     "image.interpolation": "nearest",
     "axes.grid": False,
-    "axes.labelsize": 15 * size_factor,
-    "axes.titlesize": 19 * size_factor,
-    "font.size": 16 * size_factor,
-    "legend.fontsize": 11 * size_factor,
-    "xtick.labelsize": 11 * size_factor,
-    "ytick.labelsize": 11 * size_factor,
+    "axes.labelsize": 15 * SIZE_FACTOR,
+    "axes.titlesize": 19 * SIZE_FACTOR,
+    "font.size": 16 * SIZE_FACTOR,
+    "legend.fontsize": 11 * SIZE_FACTOR,
+    "xtick.labelsize": 11 * SIZE_FACTOR,
+    "ytick.labelsize": 11 * SIZE_FACTOR,
     "text.usetex": False,
 }
 

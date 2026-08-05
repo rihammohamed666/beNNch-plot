@@ -54,18 +54,22 @@ class Plot:
         df,
         label_params: dict[str, str],
         x_ticks="data",
-        matplotlib_params=pp.matplotlib_params,
-        color_params=pp.color_params,
-        additional_params=pp.additional_params,
+        matplotlib_params=None,
+        color_params=None,
+        additional_params=None,
         time_scaling=1,
         detailed_timers=True,
     ):
 
         self.x_axis = x_axis
         self.x_ticks = x_ticks
-        self.matplotlib_params = matplotlib_params
-        self.additional_params = additional_params
-        self.color_params = color_params
+        self.matplotlib_params = (
+            matplotlib_params.copy() if matplotlib_params is not None else pp.matplotlib_params.copy()
+        )
+        self.additional_params = (
+            additional_params.copy() if additional_params is not None else pp.additional_params.copy()
+        )
+        self.color_params = color_params.copy() if color_params is not None else pp.color_params.copy()
         self.label_params = label_params
         self.time_scaling = time_scaling
         self.df = df

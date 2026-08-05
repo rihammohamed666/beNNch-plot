@@ -571,16 +571,16 @@ def cycletime_vs_spikecount(data, rtf, filename: str | Path = "plot.png"):
     x = spike_counter_concat[1:][::1]
     y = cycle_time_concat[:-1][::1]
 
-    H, _ = np.histogram2d(x, y, bins=100, range=[[0, count_lim], [0, time_lim]])
+    hist, _, _ = np.histogram2d(x, y, bins=100, range=[[0, count_lim], [0, time_lim]])
 
     fig, ax = plt.subplots()
 
     # Transpose H so x is horizontal, y is vertical
-    Z = H.T
+    hist_transpose = hist.T
 
-    norm = colors.LogNorm(vmin=Z[Z > 0].min(), vmax=Z.max())
+    norm = colors.LogNorm(vmin=hist_transpose[hist_transpose > 0].min(), vmax=hist_transpose.max())
     im = ax.imshow(
-        Z,
+        hist_transpose,
         norm=norm,
         cmap="viridis",
         origin="lower",
