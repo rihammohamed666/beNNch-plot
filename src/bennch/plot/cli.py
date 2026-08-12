@@ -7,7 +7,7 @@ from pathlib import Path
 import rich_click as click
 
 from bennch.plot.io.config import load_config
-from bennch.plot.io.git import SetsData
+from bennch.plot.io.git import SetsData, UuidSet
 from bennch.plot.io.tarball import get_variable_value
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
@@ -48,6 +48,21 @@ def cli_cache_init():
     sets = SetsData()
     sets.init()
     log.debug("cache init done")
+
+
+@cli_cache.command("add")
+def cli_cache_add():
+    "Initialize the cache directory."
+    sets = SetsData()
+
+    uset = UuidSet.model_validate(
+        {
+            "uuids": ["c9d6a911-e27f-49b0-bdbf-68af3ede69be", "03413c4d-a67d-4794-adad-41683bae1fe6"],
+            "comment": "testing set of non-existant UUIDs.",
+        }
+    )
+    sets.add(uset)
+    log.debug("set was added")
 
 
 @cli.command("scaling")

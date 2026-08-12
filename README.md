@@ -55,3 +55,9 @@ The microcircuit serves as an example of a benchmark model that can be run acros
 #### multi-area-model
 
 In contrast to the microcircuit, the multi-area model showcases benchmarks across multiple number of nodes. While the basics are the same as for the microcircuit, an additional panel is created for showing the network construction time together with the state propagation time. Additionally, `multi-area-model_ram.py` gives a minimal example of how to plot other measurements than times.
+
+## Architecture
+
+bennch.plot is a [namespace-package] in the `bennch` namespace. It contains all plot-related mechanisms.
+
+[namespace-package]: https://packaging.python.org/en/latest/guides/packaging-namespace-packages/
