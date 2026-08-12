@@ -2,25 +2,37 @@
 "Translated script to be integrated, received by mail."
 
 import logging
+import sys
 from pathlib import Path
 
 import rich_click as click
 
-from bennch.plot.io.config import load_config
-from bennch.plot.io.git import SetsData, UuidSet
+from bennch.plot.io.config import load_config, save_config
+from bennch.plot.io.git import SetsData, SortedUUIDs, UuidSet
 from bennch.plot.io.tarball import get_variable_value
+from bennch.plot.view import rich_view
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
 
 # import matplotlib.transforms as mtransforms
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 
 
-@click.group()
-def cli():
+@click.group(result_callback=click.pass_context(rich_view))
+@click.option("--debug", "-d", help="increase logging to DEBUG level for given module.", multiple=True)
+@click.pass_context
+def cli(ctx, debug: list[str] | None = None):
     "BeNNch-plot based plotting functions."
+    if sys.stdout.isatty():
+        log.setLevel(logging.INFO)
+    if debug is not None:
+        for modulename in debug:
+            log.info("increasing debugging level on %s", modulename)
+            logging.getLogger(modulename).setLevel(logging.DEBUG)
+
+    ctx.obj = {}  # ctx.with_resource(Loaded(config))
 
 
 @cli.group(name="get")
@@ -65,6 +77,30 @@ def cli_cache_add():
     log.debug("set was added")
 
 
+@cli.group(name="set")
+def cli_set():
+    "Modify the currently active set of UUIDs."
+
+
+@cli_set.command(name="new")
+def cli_set_new():
+    "Set the current-set of UUIDs to a new empty set."
+    config = load_config()
+    log.info("creating new empty set")
+    uuids = SortedUUIDs()
+    config.current_set.setid = uuids.key
+    save_config(config)
+    return config.current_set
+
+
+@cli_set.command(name="show")
+# @click.pass_obj
+def cli_set_show():  # config):
+    "Show the list of UUIDs in the current set."
+    config = load_config()
+    return config
+
+
 @cli.command("scaling")
 @click.argument("csvfile", type=click.Path(dir_okay=False, exists=True, path_type=Path))
 @click.option("--model", "-m", help="Style options for specific model.", type=click.Choice(ModelType), required=True)
@@ -85,7 +121,3 @@ def plot_docs(csvfile: Path, model: ModelType, output: Path) -> None:
     log.info("saved as %s.", output)
     if show:
         plt.show()
-
-
-if __name__ == "__main__":
-    cli()
