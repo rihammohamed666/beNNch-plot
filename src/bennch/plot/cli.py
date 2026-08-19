@@ -4,12 +4,13 @@
 import logging
 import sys
 from pathlib import Path
+from uuid import UUID
 
 import rich_click as click
 
 from bennch.plot.io.config import load_config, save_config
-from bennch.plot.io.git import SetsData, SortedUUIDs, UuidSet
 from bennch.plot.io.tarball import get_variable_value
+from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
@@ -49,46 +50,45 @@ def cli_get_var(uuid: str, var_name: str) -> None:
     get_variable_value(uuid, config.vars[var_name], config.source)
 
 
-@cli.group("cache")
-def cli_cache():
-    "UUID sets cache handling."
-
-
-@cli_cache.command("init")
-def cli_cache_init():
-    "Initialize the cache directory."
-    sets = SetsData()
-    sets.init()
-    log.debug("cache init done")
-
-
-@cli_cache.command("add")
-def cli_cache_add():
-    "Initialize the cache directory."
-    sets = SetsData()
-
-    uset = UuidSet.model_validate(
-        {
-            "uuids": ["c9d6a911-e27f-49b0-bdbf-68af3ede69be", "03413c4d-a67d-4794-adad-41683bae1fe6"],
-            "comment": "testing set of non-existant UUIDs.",
-        }
-    )
-    sets.add(uset)
-    log.debug("set was added")
-
-
 @cli.group(name="set")
 def cli_set():
     "Modify the currently active set of UUIDs."
+
+
+@cli_set.command("reinit-cache")
+def cli_set_init():
+    "Initialize the cache directory."
+    sets = SetCache()
+    sets.reinit()
+    log.debug("cache init done")
 
 
 @cli_set.command(name="new")
 def cli_set_new():
     "Set the current-set of UUIDs to a new empty set."
     config = load_config()
-    log.info("creating new empty set")
-    uuids = SortedUUIDs()
-    config.current_set.setid = uuids.key
+    sets = SetCache()
+
+    uset = UuidSet()
+
+    sets.save(uset)
+    config.current_set.setid = uset.key
+    save_config(config)
+    return config.current_set
+
+
+@cli_set.command("add")
+@click.argument("uuid", type=UUID)
+def cli_set_add(uuid: UUID):
+    "Add the given UUID to the current set."
+    config = load_config()
+    sets = SetCache()
+
+    uset = sets.load(load_config().current_set.setid)
+    uset = uset.add(uuid)
+
+    sets.save(uset)
+    config.current_set.setid = uset.key
     save_config(config)
     return config.current_set
 
@@ -98,7 +98,26 @@ def cli_set_new():
 def cli_set_show():  # config):
     "Show the list of UUIDs in the current set."
     config = load_config()
-    return config
+    log.info("current set is %s", config.current_set)
+    sets = SetCache()
+    uset = sets.load(config.current_set.setid)
+    return uset
+
+
+@cli_set.command("rm")
+@click.argument("uuid", type=UUID)
+def cli_set_remove(uuid: UUID):
+    "Remove the given UUID from the current set."
+    config = load_config()
+    sets = SetCache()
+
+    uset = sets.load(load_config().current_set.setid)
+    uset = uset.remove(uuid)
+
+    sets.save(uset)
+    config.current_set.setid = uset.key
+    save_config(config)
+    return config.current_set
 
 
 @cli.command("scaling")

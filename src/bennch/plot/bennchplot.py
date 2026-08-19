@@ -61,7 +61,7 @@ class Plot:
         detailed_timers=True,
     ):
 
-        self.x_axis = x_axis
+        self.x_axis = x_axis  # pylint: disable=too-many-instance-attributes
         self.x_ticks = x_ticks
         self.matplotlib_params = (
             matplotlib_params.copy() if matplotlib_params is not None else pp.matplotlib_params.copy()

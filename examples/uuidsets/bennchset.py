@@ -8,7 +8,7 @@ import rich_click as click
 
 from bennch.plot.config import XDG
 from bennch.plot.io import yaml
-from bennch.plot.io.git import SetsData
+from bennch.plot.models import SetCache
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
@@ -42,8 +42,8 @@ def cli_sets():
 @cli_sets.command("init")
 def cli_sets_init():
     "Initialize the local cache of UUID set data."
-    repo = SetsData()
-    repo.init()
+    repo = SetCache()
+    repo.reinit()
 
 
 if __name__ == "__main__":
