@@ -12,13 +12,17 @@ from bennch.plot.io import yaml
 from bennch.plot.io.csv import load_data
 from bennch.plot.mpltools import simple_axis
 
-from .models import ModelType
+from .models import ModelType, ScalingPlotData
 
 log = logging.getLogger(__name__)
 
 
 class ScalingPlot:
     "Scaling plot with fractions of construct and simulation times."
+
+    def wants(self) -> list[str]:
+        "Return the list of required variables."
+        return list(ScalingPlotData.model_fields)
 
     def plot(self, csvfile: str | Path, model: ModelType):
         "Render the plot."

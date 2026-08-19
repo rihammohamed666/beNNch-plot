@@ -1,16 +1,15 @@
 source:
   host: hambach
   path: /projects/bennch-data/bennch-datadump/
-
 vars:
   PIPELINE_ID:
     path: 0*_bench/work/metadata/env-vars.out
-    parser: "grep -i PIPELINE_ID"
-
+    parser: grep -i PIPELINE_ID
   GATHER_METADATA_VERS:
     path: 0*_bench/work/metadata/gather.json
-    parser: "jq .version"
-
+    parser: jq .version
   creation-time:
     path: 0*_bench/work/data/logfile_0
-    parser: "grep -i py_time_connect"
+    parser: grep -i py_time_connect
+current_set:
+  setid: d751713988987e9331980363e24189ce
