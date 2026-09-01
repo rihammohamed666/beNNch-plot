@@ -2,14 +2,32 @@ source:
   host: hambach
   path: /projects/bennch-data/bennch-datadump/
 vars:
+  local_spike_counter:
+    path: 0*_bench/work/stdout
+    parser: grep -i local_spike_counter
   PIPELINE_ID:
     path: 0*_bench/work/metadata/env-vars.out
     parser: grep -i PIPELINE_ID
   GATHER_METADATA_VERS:
     path: 0*_bench/work/metadata/gather.json
     parser: jq .version
+  times:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep -i time_
   creation-time:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i py_time_connect
+  time_simulate:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep -i time_simulate
+  omp_sync:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep -i time_omp_synchronization
+  env:
+    path: 0*_bench/work/metadata/env-vars.out
+    parser: cat
+  hwloc:
+    path: 0*_bench/work/metadata/hwloc-ls.out
+    parser: cat
 current_set:
   setid: 9c9dee4a7cb395bea685aa2edbe0887c
