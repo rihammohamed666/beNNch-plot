@@ -8,7 +8,7 @@ from uuid import UUID
 
 import rich_click as click
 
-from bennch.plot.io.config import load_config, save_config
+from bennch.plot.io.config import Config, ConfigContext, load_config, save_config
 from bennch.plot.io.tarball import get_variable_value
 from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
@@ -33,7 +33,7 @@ def cli(ctx, debug: list[str] | None = None):
             log.info("increasing debugging level on %s", modulename)
             logging.getLogger(modulename).setLevel(logging.DEBUG)
 
-    ctx.obj = {}  # ctx.with_resource(Loaded(config))
+    ctx.obj = ctx.with_resource(ConfigContext())
 
 
 @cli.group(name="get")
@@ -120,7 +120,19 @@ def cli_set_remove(uuid: UUID):
     return config.current_set
 
 
-@cli.command("scaling")
+@cli.group(name="config")
+def cli_config():
+    "Group of configuration subcommands."
+
+
+@cli_config.command("show")
+@click.pass_obj
+def cli_config_show(config) -> Config:
+    "Display loaded configuration."
+    return config
+
+
+@cli.command(name="scaling")
 @click.argument("csvfile", type=click.Path(dir_okay=False, exists=True, path_type=Path))
 @click.option("--model", "-m", help="Style options for specific model.", type=click.Choice(ModelType), required=True)
 @click.option("--output", "-o", type=click.Path(exists=False, path_type=Path))  # examples=[ 'hpc-v3.9-rc1.png']
