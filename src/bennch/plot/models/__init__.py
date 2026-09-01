@@ -8,17 +8,17 @@ serialize gracefully and provide the basis for set hashes.
 import logging
 import os
 from hashlib import md5
+from pathlib import Path
 from typing import Any, Generator, Iterable, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field, RootModel, field_serializer, field_validator
 import git
+from pydantic import BaseModel, Field, RootModel, field_serializer, field_validator
 
 from bennch.plot.config import XDG
-from bennch.plot.io import yaml, model2dict
+from bennch.plot.io import yaml
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 
 class UuidSet(RootModel[frozenset[UUID]]):
@@ -174,6 +174,7 @@ class UuidSet(RootModel[frozenset[UUID]]):
         '625b6ae2532cf6573be880cee5e05af8'
 
         """
+        log.debug("String for key calculation: %s", self.model_dump_json().encode())
         return md5(self.model_dump_json().encode()).hexdigest()
 
 
@@ -236,7 +237,19 @@ class CommentedUuidSet(BaseModel):
 
 
 class SetCache:
-    "Manage a SetCache storage repository."
+    """
+    Manage a SetCache storage repository.
+
+    Note that none of the methods is allowed to leak a pathname to the calling
+    context. This class may well be re-implemented as database or by other
+    means!
+
+    Note that the returned handles are of type `str`. The implementation
+    details of the handle are irrelevant here and *must not* matter. Do not
+    make assumptions about the nature of the returned str-value. Treat it as
+    opaque handle! The only definition of UuidSet keys is in the `UuidSet`
+    class.
+    """
 
     def __init__(self):
         log.debug("SetCache")
@@ -255,28 +268,80 @@ class SetCache:
     def sync(self) -> None:
         "Make sure the default remote knows everything and we're uptodate."
 
-    def save(self, uset: UuidSet) -> str:
+    def save(self, uset: UuidSet, overwrite: bool = False) -> str:
         """
         Add given set to the storage.
 
+        Parameters
+        ----------
+        overwrite: bool
+            re-write the given set-file into the cache. This can help when
+            on-disk format of cache-files changes, or file syntax became
+            corrupted.
+
         Returns
-        =======
-        str: hash of stored set.
+        -------
+        str: handle of stored set.
         """
-        hash = uset.key
-        log.debug("adding set %s with key %s", uset, hash)
-        filename = (self._path / f"{hash}.yaml")
-        if filename.exists():
+        handle = uset.key
+        log.debug("adding set %s with key %s", uset, handle)
+        filename = self._path_to(handle)
+        if filename.exists() and not overwrite:
             log.info("set already in storage.")
         else:
             with filename.open("w", encoding="utf8") as outfile:
-                yaml.dump(model2dict(uset), outfile)
-        return hash
+                # Align with UuidSet.key() to allow easy checking of file
+                # consistency!
+                log.debug("  writing %s", repr(uset.model_dump_json()))
+                outfile.write(uset.model_dump_json())
+        return handle
 
-
-    def load(self, hash: str) -> UuidSet:
+    def load(self, handle: str) -> UuidSet:
         "Load a UuidSet from the cache."
-        filename = (self._path / f"{hash}.yaml")
+        filename = self._path_to(handle)
         log.debug("loading set from %s", filename)
-        with filename.open('r', encoding="utf8") as infile:
-            return UuidSet.model_validate(yaml.load(infile))
+        with filename.open("r", encoding="utf8") as infile:
+            return UuidSet.model_validate(yaml.load(infile))  # actually the oposite of save()
+
+    def __contains__(self, handle: str) -> bool:
+        "Check if the given handle points to a known set."
+        return self._path_to(handle).exists()
+
+    def near_match(self, handle: str) -> list[str]:
+        """
+        Return possible sets similar to the given handle.
+
+        This method may be used to implement tab-completion, or selection of
+        approximate set names.
+        """
+        log.debug("Searching for sets with pattern %s", repr(handle))
+        path = Path(str(self._path_to(handle).with_suffix("")) + "*")
+        log.debug("  search pattern %s", repr(path))
+        log.debug("  searching %s", path.parent)
+        log.debug("  for %s", path.name)
+        return list(self._handle_of(path) for path in path.parent.glob(path.name))
+
+    def _path_to(self, handle: str) -> Path:
+        "Return the correctly mapped path for the given handle."
+        # For now hashes are just stored flat in a path, but this will change
+        # as soon as the number of known sets increases and directories are
+        # split up. Probably will also need some bad-char cleaning for
+        # arbitrary handle strings.
+
+        # when changing this definition, also fix the inverse method
+        # _handle_of()!
+        return self._path / f"{handle}.yaml"
+
+    def _handle_of(self, path: Path) -> str:
+        """
+        Inverse of _path_to().
+
+        >>> sc = SetCache()
+        >>> sc._handle_of(sc._path_to("asdf")) == "asdf"
+        True
+        """
+        if self._path != path.parent:
+            raise ValueError("not a valid object path.")
+
+        # currently the handle is directly used as filename...
+        return path.with_suffix("").name
