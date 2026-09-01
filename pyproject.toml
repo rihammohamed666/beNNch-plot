@@ -176,7 +176,13 @@ load-plugins = [
 # AI suggested to explicitly add the sys.path to avoid confusion between src/
 # and namespace/.
 init-hook='import sys; from pathlib import Path; sys.path.insert(0, str(Path().resolve() / "src"))'
-
+# Ignore files that are here for historic reasons. Ideally delete the files and
+# remove ignores at some point.
+ignore-paths = """
+	^examples/numbala/jemalloc_loader_example.py$,
+	^src/bennch/plot/bennchplot.py$,
+	^src/bennch/plot/benchmarkplots.py$
+	"""
 
 # PyCodeStyle
 # config see https://pycodestyle.pycqa.org/en/latest/intro.html
