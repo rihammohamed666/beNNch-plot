@@ -152,6 +152,10 @@ class UuidSet(RootModel[frozenset[UUID]]):
         "Check if given UUID is in this set."
         return (uuid if isinstance(uuid, UUID) else UUID(uuid)) in self.root
 
+    def __len__(self) -> int:
+        "Return the total number of unique UUIDs in this set."
+        return len(self.root)
+
     @property
     def key(self) -> str:
         """

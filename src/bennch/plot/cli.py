@@ -4,13 +4,16 @@
 import logging
 import sys
 from io import TextIOWrapper
+from itertools import product
 from pathlib import Path
+from typing import Any
 from uuid import UUID
 
 import rich_click as click
+from rich.progress import track
 
 from bennch.plot.io.config import Config, ConfigContext, load_config, save_config
-from bennch.plot.io.tarball import get_variable_value
+from bennch.plot.io.tarball import get_variable_value, list_files
 from bennch.plot.io.uuids import import_uuids
 from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
@@ -44,12 +47,58 @@ def cli_get():
 
 
 @cli_get.command("variable")
-@click.argument("uuid")
+@click.argument("uuid", type=UUID)
 @click.argument("var_name")
-def cli_get_var(uuid: str, var_name: str) -> None:
-    "Get the triggering pipeline ID of the given simulation."
+def cli_get_var(uuid: UUID, var_name: str) -> None:
+    "Get the variable value for the run with given UUID."
     config = load_config()
-    get_variable_value(uuid, config.vars[var_name], config.source)
+    return get_variable_value(uuid, config.vars[var_name], config.source)
+
+
+@cli_get.command("variables")
+@click.argument("var_names", nargs=-1, required=True)
+@click.pass_obj
+def cli_get_vars(config: Config, var_names: list[str]) -> dict[UUID, dict[str, Any]]:
+    "Get the variable values for all runs in the current set."
+    config = load_config()
+    sets = SetCache()
+    uset = sets.load(config.current_set.setid)
+
+    data: dict[UUID, dict[str, Any]] = {}
+    for uuid, var_name in track(product(uset, var_names), total=len(uset) * len(var_names)):
+        data.setdefault(uuid, {})[var_name] = get_variable_value(uuid, config.vars[var_name], config.source)
+    return data
+
+
+@cli_get.command("list")
+@click.option("--flat", is_flag=True, help="return result as flat ascii output")
+@click.argument("pattern", required=False)
+@click.argument("uuid", required=False, type=UUID, nargs=-1)
+@click.pass_obj
+def cli_get_list(
+    config: Config, flat: bool = False, pattern: str = "*", uuid: list[UUID] | None = None
+) -> dict[UUID, list[str]] | str:
+    """
+    Get a list of files available for the given UUID(s).
+
+    If PATTERN is omitted '*' is implied. If no UUID is given then all UUIDs of
+    the current set are queried.
+    """
+    if uuid:
+        uset = UuidSet.model_validate(uuid)
+    else:
+        config = load_config()
+        sets = SetCache()
+        uset = sets.load(config.current_set.setid)
+    log.debug("looking for files with pattern %s", pattern)
+    log.debug("in list of uuids:\n    %s", "\n    ".join([str(u) for u in uset]))
+
+    files: dict[UUID, list[str]] = {}
+    for uid in uset:
+        files[uid] = list_files(uid, pattern, config.source)
+    if flat:
+        return "\n".join("\n".join(lines) for lines in files.values())
+    return files
 
 
 @cli.group(name="set")
@@ -66,32 +115,30 @@ def cli_set_init():
 
 
 @cli_set.command(name="new")
-def cli_set_new():
-    "Set the current-set of UUIDs to a new empty set."
-    config = load_config()
+@click.pass_obj
+def cli_set_new(config: Config):
+    "Set the current set of UUIDs to a new empty set."
     sets = SetCache()
 
     uset = UuidSet()
 
     sets.save(uset)
     config.current_set.setid = uset.key
-    save_config(config)
     return config.current_set
 
 
 @cli_set.command("add")
 @click.argument("uuid", type=UUID)
-def cli_set_add(uuid: UUID):
+@click.pass_obj
+def cli_set_add(config: Config, uuid: UUID):
     "Add the given UUID to the current set."
-    config = load_config()
     sets = SetCache()
 
-    uset = sets.load(load_config().current_set.setid)
+    uset = sets.load(config.current_set.setid)
     uset = uset.add(uuid)
 
     sets.save(uset)
     config.current_set.setid = uset.key
-    save_config(config)
     return config.current_set
 
 
@@ -188,7 +235,7 @@ def cli_set_remove(uuid: UUID):
     config = load_config()
     sets = SetCache()
 
-    uset = sets.load(load_config().current_set.setid)
+    uset = sets.load(config.current_set.setid)
     uset = uset.remove(uuid)
 
     sets.save(uset)

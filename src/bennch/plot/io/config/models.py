@@ -22,6 +22,7 @@ class VarConfig(BaseModel):
 
     path: str
     parser: str
+    cast: str = Field(default="str", description="call a transfrom function after loading the value")
 
 
 class CurrentSet(BaseModel):

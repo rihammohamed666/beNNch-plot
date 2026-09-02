@@ -4,30 +4,87 @@ source:
 vars:
   local_spike_counter:
     path: 0*_bench/work/stdout
-    parser: grep -i local_spike_counter
+    parser: grep -i local_spike_counter | cut -f2
+    cast: int
   PIPELINE_ID:
     path: 0*_bench/work/metadata/env-vars.out
-    parser: grep -i PIPELINE_ID
+    parser: grep -i CI_PIPELINE_ID= | cut -d= -f2
+    cast: int
+  PARENT_PIPELINE_ID:
+    path: 0*_bench/work/metadata/env-vars.out
+    parser: grep -i CI_UPSTREAM_PIPELINE_ID= | cut -d= -f2
+    cast: int
   GATHER_METADATA_VERS:
     path: 0*_bench/work/metadata/gather.json
     parser: jq .version
+    cast: str
   times:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i time_
+    cast: str
   creation-time:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i py_time_connect
-  time_simulate:
+    cast: str
+  base_memory:
     path: 0*_bench/work/data/logfile_0
-    parser: grep -i time_simulate
+    parser: grep "^base_memory " | cut -f2 -d" "
+    cast: int
+  num_processes:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^num_processes " | cut -f2 -d" "
+    cast: int
+  local_num_threads:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^local_num_threads " | cut -f2 -d" "
+    cast: int
+  node_memory:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^node_memory " | cut -f2 -d" "
+    cast: int
+  network_memory:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^network_memory " | cut -f2 -d" "
+    cast: int
+  init_memory:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^init_memory " | cut -f2 -d" "
+    cast: int
+  total_memory:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^total_memory " | cut -f2 -d" "
+    cast: int
   omp_sync:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i time_omp_synchronization
+    cast: str
   env:
     path: 0*_bench/work/metadata/env-vars.out
     parser: cat
+    cast: str
   hwloc:
     path: 0*_bench/work/metadata/hwloc-ls.out
     parser: cat
+    cast: str
+  logfile:
+    path: 0*_bench/work/data/logfile_0
+    parser: cat
+    cast: str
+  cpuinfo:
+    path: 0*_bench/work/metadata/cpuinfo.out
+    parser: cat
+    cast: str
+  cpu_model:
+    path: 0*_bench/work/metadata/cpuinfo.out
+    parser: 'grep "^model name\s" | cut -f2 -d: | head -n1'
+    cast: strip
+  time_simulate:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^time_simulate_cpu " | cut -f2 -d" "
+    cast: float
+  label:
+    path: 0*_bench/work/metadata/env-vars.out
+    parser: grep "^BENCHMARK_ID=" | cut -f2 -d=
+    cast: strip
 current_set:
-  setid: 9c9dee4a7cb395bea685aa2edbe0887c
+  setid: 04b04b3dca825367331fb87356b890b9
