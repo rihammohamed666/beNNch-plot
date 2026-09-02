@@ -64,9 +64,17 @@ def cli_get_vars(config: Config, var_names: list[str]) -> dict[UUID, dict[str, A
     sets = SetCache()
     uset = sets.load(config.current_set.setid)
 
+    if not all(var_name in config.vars for var_name in var_names):
+        unknowns = [var_name for var_name in var_names if var_name not in config.vars]
+        raise KeyError(f"Variable not known: {unknowns}")
+
     data: dict[UUID, dict[str, Any]] = {}
     for uuid, var_name in track(product(uset, var_names), total=len(uset) * len(var_names)):
-        data.setdefault(uuid, {})[var_name] = get_variable_value(uuid, config.vars[var_name], config.source)
+        try:
+            data.setdefault(uuid, {})[var_name] = get_variable_value(uuid, config.vars[var_name], config.source)
+        except ValueError as exc:
+            log.warning("could not extract %s from %s: %s", var_name, uuid, exc)
+            data.setdefault(uuid, {})[var_name] = None  # debatable (!)
     return data
 
 
@@ -142,6 +150,22 @@ def cli_set_add(config: Config, uuid: UUID):
     return config.current_set
 
 
+@cli_set.command("rm")
+@click.argument("uuid", type=UUID)
+def cli_set_remove(uuid: UUID):
+    "Remove the given UUID from the current set."
+    config = load_config()
+    sets = SetCache()
+
+    uset = sets.load(config.current_set.setid)
+    uset = uset.remove(uuid)
+
+    sets.save(uset)
+    config.current_set.setid = uset.key
+    save_config(config)
+    return config.current_set
+
+
 @cli_set.command("select")
 @click.argument("setid", type=str)
 @click.pass_obj
@@ -198,9 +222,10 @@ def cli_set_show(flat: bool = False):  # config):
 
 
 @cli_set.command(name="import")
+@click.option("--overwrite", is_flag=True, help="Re-write the set to storage, even if it exists already.")
 @click.argument("infile", type=click.File("r"))
 @click.pass_obj
-def cli_set_import(config: Config, infile: TextIOWrapper):
+def cli_set_import(config: Config, infile: TextIOWrapper, overwrite: bool = False):
     # For correct wrapping of numpy-docstrings use `\b`. See
     # https://click.palletsprojects.com/en/stable/documentation/#escaping-click-s-wrapping
     r"""
@@ -223,25 +248,16 @@ def cli_set_import(config: Config, infile: TextIOWrapper):
     log.debug("reading stdin...")
     sets = SetCache()
     uset = import_uuids(infile.read())
-    sets.save(uset)
+    sets.save(uset, overwrite)
     config.current_set.setid = uset.key
     return uset.key
 
 
-@cli_set.command("rm")
-@click.argument("uuid", type=UUID)
-def cli_set_remove(uuid: UUID):
-    "Remove the given UUID from the current set."
-    config = load_config()
+@cli_set.command(name="fsck")
+def cli_set_fsck():
+    "Run a consistency check on the local SetCache."
     sets = SetCache()
-
-    uset = sets.load(config.current_set.setid)
-    uset = uset.remove(uuid)
-
-    sets.save(uset)
-    config.current_set.setid = uset.key
-    save_config(config)
-    return config.current_set
+    return sets.fsck()
 
 
 @cli.group(name="config")

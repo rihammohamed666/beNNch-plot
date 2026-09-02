@@ -27,6 +27,8 @@ def get_variable_value(uuid: UUID, var: VarConfig, source: SourceConfig) -> Any:
         "int": int,
         "float": float,
         "strip": lambda s: s.strip(),
+        "list[int]": lambda s: [int(x) for x in s.split()],
+        "list[float]": lambda s: [int(x) for x in s.split()],
     }
     return casts[var.cast](value)
 

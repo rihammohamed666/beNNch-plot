@@ -257,6 +257,7 @@ class SetCache:
 
     def __init__(self):
         log.debug("SetCache")
+        self._layout = "v1.0-md5"  # string used to identify internal set schema
         self._path = XDG("bennch-plot/sets").data_home
         log.debug("BeNNch SetCache cache location: %s (exists: %s)", self._path, self._path.exists())
         if not (self._path / ".git").exists():
@@ -269,8 +270,33 @@ class SetCache:
         log.debug("(re-)initializing git repository…")
         git.Repo.init(self._path)
 
-    def sync(self) -> None:
-        "Make sure the default remote knows everything and we're uptodate."
+    def fsck(self) -> bool:
+        """
+        Check the files in current layout for consistency.
+
+        Returns true if all files seem to be consistent.
+        """
+        log.info("Checking local SetCache for consistency...")
+        all_consistent = True
+        for filename in (self._path / self._layout).glob("*"):
+            this_bad = False
+            handle = self._handle_of(filename)
+            with filename.open("rb") as infile:
+                checksum = md5(infile.read()).hexdigest()
+            uset = self.load(handle)
+            if uset.key != handle:
+                log.error("The loaded uset is stored at the wrong handle!")
+                this_bad = True
+                all_consistent = False
+            if checksum != handle:
+                log.error("The file has a wrong checksum and may be corrupted!")
+                this_bad = True
+                all_consistent = False
+            if this_bad:
+                print(f"{handle}: FAILED")
+            else:
+                print(f"{handle}: OK")
+        return all_consistent
 
     def save(self, uset: UuidSet, overwrite: bool = False) -> str:
         """
@@ -293,6 +319,8 @@ class SetCache:
         if filename.exists() and not overwrite:
             log.info("set already in storage.")
         else:
+            if filename.exists():
+                log.warning("overwriting existing set in cache: %s", filename)
             with filename.open("w", encoding="utf8") as outfile:
                 # Align with UuidSet.key() to allow easy checking of file
                 # consistency!
@@ -334,7 +362,7 @@ class SetCache:
 
         # when changing this definition, also fix the inverse method
         # _handle_of()!
-        return self._path / f"{handle}.yaml"
+        return self._path / self._layout / f"{handle}.yaml"
 
     def _handle_of(self, path: Path) -> str:
         """
@@ -344,8 +372,8 @@ class SetCache:
         >>> sc._handle_of(sc._path_to("asdf")) == "asdf"
         True
         """
-        if self._path != path.parent:
-            raise ValueError("not a valid object path.")
+        if (self._path / self._layout) != path.parent:
+            raise ValueError(f"not a valid object path for {self._layout} layout!")
 
         # currently the handle is directly used as filename...
         return path.with_suffix("").name
