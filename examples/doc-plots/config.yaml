@@ -11,5 +11,12 @@ vars:
   creation-time:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i py_time_connect
+  threads_per_task:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^local_num_threads " | cut -f2 -d" "
+  time_simulate:
+    path: 0*_bench/work/data/logfile_0
+    parser: grep "^time_simulate_cpu " | cut -f2 -d" "
+
 current_set:
   setid: 9c9dee4a7cb395bea685aa2edbe0887c

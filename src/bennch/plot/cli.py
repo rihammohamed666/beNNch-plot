@@ -9,11 +9,12 @@ from uuid import UUID
 import rich_click as click
 
 from bennch.plot.io.config import load_config, save_config
-from bennch.plot.io.tarball import get_variable_value
+from bennch.plot.io.tarball import get_variable_value, get_variables
 from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
+from bennch.plot.view.plot_classes import ThreadScalingPlot
 
 # import matplotlib.transforms as mtransforms
 
@@ -45,9 +46,20 @@ def cli_get():
 @click.argument("uuid")
 @click.argument("var_name")
 def cli_get_var(uuid: str, var_name: str) -> None:
-    "Get the triggering pipeline ID of the given simulation."
+    "Get variable from UUid."
     config = load_config()
-    get_variable_value(uuid, config.vars[var_name], config.source)
+    value = get_variable_value(uuid, config.vars[var_name], config.source)
+    click.echo(value)
+
+
+@cli_get.command("variables")
+@click.argument("uuids", nargs=-1, required=True)
+@click.option("-var", "var_names", multiple=True, required=True)
+def cli_get_vars(uuids: tuple[str, ...], var_names: tuple[str, ...]) -> None:
+    "Get multiple variables from multiple UUIDs."
+    config = load_config()
+    values = get_variables(UuidSet(uuids), list(var_names), config)  # type: ignore[arg-type]
+    click.echo(values)
 
 
 @cli.group(name="set")
@@ -140,3 +152,16 @@ def plot_docs(csvfile: Path, model: ModelType, output: Path) -> None:
     log.info("saved as %s.", output)
     if show:
         plt.show()
+
+
+@cli.command("ThreadScalingPlot")
+@click.argument("uuids", nargs=-1, required=True)
+def cli_thread_scaling_plot(uuids) -> None:
+    "Create a standard benchmark plot for the documentation."
+    tplot = ThreadScalingPlot()
+    print(tplot.required_variables)
+    print(uuids)
+    config = load_config()
+    values = get_variables(uuids, tplot.required_variables, config)
+    print(values)
+    tplot.plot(values)
