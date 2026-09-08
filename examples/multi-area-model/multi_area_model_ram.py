@@ -16,6 +16,9 @@ this program. If not, see <https://www.gnu.org/licenses/>.
 SPDX-License-Identifier: GPL-3.0-or-later
 """
 
+# ignore code duplication for this file
+# pylint: disable=duplicate-code
+
 from matplotlib import pyplot as plt
 
 from bennch.plot.bennchplot import Plot
