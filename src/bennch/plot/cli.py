@@ -19,7 +19,7 @@ from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
-from bennch.plot.io.uuidmap import export_uuid_set
+from bennch.plot.io.uuidmap import export_uuid_set, import_uuid_set
 
 # import matplotlib.transforms as mtransforms
 
@@ -222,7 +222,7 @@ def cli_set_show(flat: bool = False):  # config):
     return uset
 
 
-@cli_set.command(name="import")
+@cli_set.command(name="from")
 @click.option("--overwrite", is_flag=True, help="Re-write the set to storage, even if it exists already.")
 @click.argument("infile", type=click.File("r"))
 @click.pass_obj
@@ -249,6 +249,25 @@ def cli_set_import(config: Config, infile: TextIOWrapper, overwrite: bool = Fals
     log.debug("reading stdin...")
     sets = SetCache()
     uset = import_uuids(infile.read())
+    sets.save(uset, overwrite)
+    config.current_set.setid = uset.key
+    return uset.key
+
+@cli_set.command(name="import")
+@click.option("--overwrite", is_flag=True, help="Re-write the set to storage, even if it exists already.")
+@click.argument("setid", type=str)
+@click.pass_obj
+def cli_set_import(config: Config, setid: str, overwrite: bool = False):
+    """Import a UUID set from the remote source."""
+    text = import_uuid_set(setid, config.source)
+    uset = import_uuids(text)
+
+    if uset.key != setid:
+        raise click.ClickException(
+            f"Remote set {setid!r} contains UUIDs for set {uset.key!r}."
+        )
+
+    sets = SetCache()
     sets.save(uset, overwrite)
     config.current_set.setid = uset.key
     return uset.key
