@@ -19,6 +19,7 @@ from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
 from bennch.plot.view.doc_plot import ScalingPlot
 from bennch.plot.view.models import ModelType
+from bennch.plot.io.uuidmap import export_uuid_set
 
 # import matplotlib.transforms as mtransforms
 
@@ -251,6 +252,16 @@ def cli_set_import(config: Config, infile: TextIOWrapper, overwrite: bool = Fals
     sets.save(uset, overwrite)
     config.current_set.setid = uset.key
     return uset.key
+
+@cli_set.command(name="export")
+@click.pass_obj
+def cli_set_export(config: Config):
+    """Save the current UUID set next to the remote UUID tarballs."""
+    sets = SetCache()
+    uset = sets.load(config.current_set.setid)
+
+    export_uuid_set(uset, config.source)
+    return "Set is exported to the cluster"
 
 
 @cli_set.command(name="fsck")
