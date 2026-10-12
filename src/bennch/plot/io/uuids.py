@@ -18,3 +18,11 @@ def import_uuids(text: str) -> UuidSet:
     Returns a UuidSet with all UUIDs found in text.
     """
     return UuidSet(frozenset(UUID(match.group()) for match in uuid_re.finditer(text)))
+
+def export_uuids(uset: UuidSet) -> str:
+    """
+    Serialize a UUID set as one UUID per line.
+
+    The order is inherited from ``UuidSet``'s Pydantic serializer.
+    """
+    return "".join(f"{uuid}\n" for uuid in uset.model_dump())

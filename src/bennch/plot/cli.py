@@ -14,6 +14,7 @@ from rich.progress import track
 
 from bennch.plot.io.config import Config, ConfigContext, load_config, save_config
 from bennch.plot.io.tarball import get_variable_value, get_variables, list_files
+from bennch.plot.io.uuidmap import export_uuid_set, import_uuid_set
 from bennch.plot.io.uuids import import_uuids
 from bennch.plot.models import SetCache, UuidSet
 from bennch.plot.view import rich_view
@@ -222,11 +223,11 @@ def cli_set_show(flat: bool = False):  # config):
     return uset
 
 
-@cli_set.command(name="import")
+@cli_set.command(name="from")
 @click.option("--overwrite", is_flag=True, help="Re-write the set to storage, even if it exists already.")
 @click.argument("infile", type=click.File("r"))
 @click.pass_obj
-def cli_set_import(config: Config, infile: TextIOWrapper, overwrite: bool = False):
+def cli_set_from(config: Config, infile: TextIOWrapper, overwrite: bool = False):
     # For correct wrapping of numpy-docstrings use `\b`. See
     # https://click.palletsprojects.com/en/stable/documentation/#escaping-click-s-wrapping
     r"""
@@ -252,6 +253,35 @@ def cli_set_import(config: Config, infile: TextIOWrapper, overwrite: bool = Fals
     sets.save(uset, overwrite)
     config.current_set.setid = uset.key
     return uset.key
+
+
+@cli_set.command(name="import")
+@click.option("--overwrite", is_flag=True, help="Re-write the set to storage, even if it exists already.")
+@click.argument("setid", type=str)
+@click.pass_obj
+def cli_set_import(config: Config, setid: str, overwrite: bool = False):
+    """Import a UUID set from the remote source."""
+    text = import_uuid_set(setid, config.source)
+    uset = import_uuids(text)
+
+    if uset.key != setid:
+        raise click.ClickException(f"Remote set {setid!r} contains UUIDs for set {uset.key!r}.")
+
+    sets = SetCache()
+    sets.save(uset, overwrite)
+    config.current_set.setid = uset.key
+    return uset.key
+
+
+@cli_set.command(name="export")
+@click.pass_obj
+def cli_set_export(config: Config):
+    """Save the current UUID set next to the remote UUID tarballs."""
+    sets = SetCache()
+    uset = sets.load(config.current_set.setid)
+
+    export_uuid_set(uset, config.source)
+    return "Set is exported to the cluster"
 
 
 @cli_set.command(name="fsck")
