@@ -316,6 +316,7 @@ class SetCache:
         handle = uset.key
         log.debug("adding set %s with key %s", uset, handle)
         filename = self._path_to(handle)
+        filename.parent.mkdir(parents=True, exist_ok=True)
         if filename.exists() and not overwrite:
             log.info("set already in storage.")
         else:

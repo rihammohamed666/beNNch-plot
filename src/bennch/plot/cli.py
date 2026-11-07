@@ -138,14 +138,15 @@ def cli_set_new(config: Config):
 
 
 @cli_set.command("add")
-@click.argument("uuid", type=UUID)
+@click.argument("uuids", type=UUID, nargs=-1, required=True)
 @click.pass_obj
-def cli_set_add(config: Config, uuid: UUID):
+def cli_set_add(config: Config, uuids: tuple[UUID, ...]):
     "Add the given UUID to the current set."
     sets = SetCache()
 
     uset = sets.load(config.current_set.setid)
-    uset = uset.add(uuid)
+    for uuid in uuids:
+        uset = uset.add(uuid)
 
     sets.save(uset)
     config.current_set.setid = uset.key
@@ -326,13 +327,14 @@ def plot_docs(csvfile: Path, model: ModelType, output: Path) -> None:
 
 
 @cli.command("ThreadScalingPlot")
-@click.argument("uuids", nargs=-1, required=True)
-def cli_thread_scaling_plot(uuids) -> None:
+def cli_thread_scaling_plot() -> None:
     "Create a standard benchmark plot for the documentation."
+    config = load_config()
+    sets = SetCache()
+    uset = sets.load(config.current_set.setid)
     tplot = ThreadScalingPlot()
     print(tplot.required_variables)
-    print(uuids)
-    config = load_config()
-    values = get_variables(uuids, tplot.required_variables, config)
+    print(list(uset))
+    values = get_variables(UuidSet(frozenset(uset)), tplot.required_variables, config)
     print(values)
-    tplot.plot(values)
+    tplot.plot(values, config.current_set.setid)

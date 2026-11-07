@@ -22,12 +22,43 @@ vars:
     path: 0*_bench/work/data/logfile_0
     parser: grep -i time_
     cast: str
-  creation-time:
+  py_time_connect:
     path: 0*_bench/work/data/logfile_0
-    parser: grep -i py_time_connect
+    parser: awk '/^py_time_connect[[:space:]]/ {print $2; exit}'
+    cast: float
+  py_time_create:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^py_time_create[[:space:]]/ {print $2; exit}'
+    cast: float
+  time_update:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^time_update[[:space:]]/ {print $2; exit}'
+    cast: float
+  model_time_sim:
+    path: configuration.xml
+    parser: grep '<parameter name="model_time_sim"' | sed -n
+      's/.*>\([^<]*\)<.*/\1/p'
+    cast: float
+  time_collocate_spike_data:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^time_collocate_spike_data[[:space:]]/ {print $2; exit}'
+    cast: float
+  time_communicate_spike_data:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^time_communicate_spike_data[[:space:]]/ {print $2; exit}'
+    cast: float
+  time_deliver_spike_data:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^time_deliver_spike_data[[:space:]]/ {print $2; exit}'
+    cast: float
+  time_mpi_synchronization:
+    path: 0*_bench/work/data/logfile_0
+    parser: awk '/^time_mpi_synchronization[[:space:]]/ {print $2; exit}'
+    cast: float
   threads_per_task:
     path: 0*_bench/work/data/logfile_0
     parser: grep "^local_num_threads " | cut -f2 -d" "
+    cast: int
   base_memory:
     path: 0*_bench/work/data/logfile_0
     parser: grep "^base_memory " | cut -f2 -d" "
@@ -56,10 +87,11 @@ vars:
     path: 0*_bench/work/data/logfile_0
     parser: grep "^total_memory " | cut -f2 -d" "
     cast: int
-  omp_sync:
+  time_omp_synchronization_simulation:
     path: 0*_bench/work/data/logfile_0
-    parser: grep -i time_omp_synchronization
-    cast: str
+    parser: awk '/^time_omp_synchronization_simulation[[:space:]]/ {print $2;
+      exit}'
+    cast: float
   env:
     path: 0*_bench/work/metadata/env-vars.out
     parser: cat
@@ -89,4 +121,4 @@ vars:
     parser: grep "^BENCHMARK_ID=" | cut -f2 -d=
     cast: strip
 current_set:
-  setid: 04b04b3dca825367331fb87356b890b9
+  setid: 7cb6ab5bed8f71be7a0e044e1435ec20
