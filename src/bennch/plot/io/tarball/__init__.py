@@ -39,9 +39,11 @@ def get_variables(uuids: UuidSet, var_names: list[str], config: Config):
     values = {}  # type: ignore[var-annotated]
 
     for uuid in uuids:
+        log.info("Fetching variables for uuid %s…", uuid)
         values[uuid] = {}
 
         for var_name in var_names:
+            log.info("  - %s…", var_name)
             values[uuid][var_name] = get_variable_value(uuid, config.vars[var_name], config.source)
 
     return values
