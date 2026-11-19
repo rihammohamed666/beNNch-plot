@@ -1,7 +1,11 @@
 """Plot classes."""
 
+import logging
+
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+
+log = logging.getLogger(__name__)
 
 
 class ThreadScalingPlot:
@@ -40,6 +44,7 @@ class ThreadScalingPlot:
 
     def aggregate_by_threads(self, data):
         """Aggregate by number of threads and take averages."""
+        log.info("aggregate by thread...")
         grouped: dict[int, list[dict[str, float | None]]] = {}
         for run in data.values():
             threads = int(run["local_num_threads"])
@@ -58,10 +63,8 @@ class ThreadScalingPlot:
         return averaged
 
     def compute_derived_quantities(self, data, detailed_timers):
-        """Do the necessary computations to plot.
-
-        The phase quantities are only computed if detailed_timers is True.
-        """
+        """Do the necessary computations to plot."""
+        log.info("compute derived quantities...")
         for values in data.values():
             if values["py_time_create"] is not None and values["py_time_connect"] is not None:
                 values["construction_time"] = values["py_time_create"] + values["py_time_connect"]
@@ -88,6 +91,7 @@ class ThreadScalingPlot:
 
     def plot_runtime(self, ax, data):
         """Plot network construction and simulation time."""
+        log.info("plot runtime...")
         threads = sorted(data)
         construction = [data[t]["construction_time"] for t in threads]
         simulation = [data[t]["time_simulate"] for t in threads]
@@ -109,6 +113,7 @@ class ThreadScalingPlot:
 
     def plot_runtime_breakdown(self, ax, data):
         """Plot the real-time factor and scaling reference lines."""
+        log.info("plot runtime-breakdown...")
         threads = sorted(data)
 
         sim_factors = []
@@ -170,6 +175,7 @@ class ThreadScalingPlot:
 
     def plot_fractions(self, ax, data):
         """Plot function for the fractioned plot."""
+        log.info("plot fractions...")
         threads = sorted(data)
         fill_height = [0] * len(threads)
         phase_variables = [
@@ -197,11 +203,8 @@ class ThreadScalingPlot:
             ax.legend(loc="upper center", bbox_to_anchor=(1.02, 0.5))
 
     def plot(self, data, set_id):
-        """Execute the plot using other functions.
-
-        With detailed timers: runtime, real-time factor and phase fractions.
-        Without detailed timers: runtime and real-time factor only.
-        """
+        """Execute the plot using other functions."""
+        log.info("Plot ThreadScalingPlot...")
         data = self.aggregate_by_threads(data)
         detailed_timers = self.has_detailed_timers(data)
         data = self.compute_derived_quantities(data, detailed_timers)

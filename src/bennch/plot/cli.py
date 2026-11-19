@@ -328,14 +328,26 @@ def plot_docs(csvfile: Path, model: ModelType, output: Path) -> None:
 @cli.command("ThreadScalingPlot")
 def cli_thread_scaling_plot() -> None:
     "Create a standard benchmark plot for the documentation."
+    log.info("Loading config...")
     config = load_config()
     sets = SetCache()
+    log.info("Loading uuid set...")
     uset = sets.load(config.current_set.setid)
+    log.info("Instantiating plot object...")
     tplot = ThreadScalingPlot()
     print(tplot.required_variables)
     print(list(uset))
+    log.info("Plot requires variables:\n%s", tplot.required_variables)
+    log.info("Using UUIDs from set %s", list(uset))
+
+    # Fetch all required data
+    log.info("Fetching values for plot…")
     values = get_variables(
         UuidSet(frozenset(uset)), tplot.required_variables, config, optional=tplot.detailed_timer_variables
     )
-    print(values)
+    log.info("Result values: %s", values)
+
+    log.info("Call plot function…")
     tplot.plot(values, config.current_set.setid)
+
+    return values

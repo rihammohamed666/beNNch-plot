@@ -46,16 +46,19 @@ def get_variables(uuids: UuidSet, var_names: list[str], config: Config, optional
     values = {}  # type: ignore[var-annotated]
 
     for uuid in uuids:
+        log.info("Fetching variables for uuid %s…", uuid)
         values[uuid] = {}
 
         for var_name in var_names:
+            log.info("  - %s…", var_name)
             try:
                 values[uuid][var_name] = get_variable_value(
                     uuid, config.vars[var_name], config.source, optional=var_name in optional
                 )
             except ValueError:
-                print(f"FAILED: UUID={uuid}, variable={var_name}")
+                log.error("FAILED: UUID=%s, variable=%s", uuid, var_name)
                 raise
+            log.info("  - %s…", var_name)
 
     return values
 
