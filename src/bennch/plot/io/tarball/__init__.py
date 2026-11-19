@@ -3,7 +3,7 @@
 import logging
 from shutil import which
 from subprocess import PIPE, CalledProcessError, Popen, check_output
-from typing import Any, Callable
+from typing import Any, Callable, Collection
 from uuid import UUID
 
 from bennch.plot.io.config.models import Config, SourceConfig, VarConfig
@@ -12,8 +12,8 @@ from bennch.plot.models import UuidSet
 log = logging.getLogger(__name__)
 
 
-def get_variable_value(uuid: UUID, var: VarConfig, source: SourceConfig) -> Any:
-    "Extract a variable from the given simulation."
+def get_variable_value(uuid: UUID, var: VarConfig, source: SourceConfig, optional: bool = False) -> Any:
+    """Extract a variable from the given simulation."""
     log.debug("Getting variable from %s with %s from %s", uuid, var.parser, var.path)
     tar = f"tar --wildcards -zxOf {uuid}.tgz {var.path}"
     cmd = [
@@ -23,6 +23,9 @@ def get_variable_value(uuid: UUID, var: VarConfig, source: SourceConfig) -> Any:
     ]
     log.debug("calling %s", cmd)
     value = check_output(cmd, encoding="utf8")
+    if optional and not value.strip():
+        log.debug("Optional variable at %s is empty for %s", var.path, uuid)
+        return None
     casts: dict[str, Callable[[str], Any]] = {
         "str": lambda x: x,
         "int": int,
@@ -31,18 +34,28 @@ def get_variable_value(uuid: UUID, var: VarConfig, source: SourceConfig) -> Any:
         "list[int]": lambda s: [int(x) for x in s.split()],
         "list[float]": lambda s: [int(x) for x in s.split()],
     }
-    return casts[var.cast](value)
+    try:
+        return casts[var.cast](value)
+    except ValueError:
+        print(f"FAILED: UUID={uuid}, value={value!r}, cast={var.cast}")
+        raise
 
 
-def get_variables(uuids: UuidSet, var_names: list[str], config: Config):
-    "Get multiple variables from multiple uuids."
+def get_variables(uuids: UuidSet, var_names: list[str], config: Config, optional: Collection[str] = ()):
+    """Get multiple variables from multiple uuids."""
     values = {}  # type: ignore[var-annotated]
 
     for uuid in uuids:
         values[uuid] = {}
 
         for var_name in var_names:
-            values[uuid][var_name] = get_variable_value(uuid, config.vars[var_name], config.source)
+            try:
+                values[uuid][var_name] = get_variable_value(
+                    uuid, config.vars[var_name], config.source, optional=var_name in optional
+                )
+            except ValueError:
+                print(f"FAILED: UUID={uuid}, variable={var_name}")
+                raise
 
     return values
 

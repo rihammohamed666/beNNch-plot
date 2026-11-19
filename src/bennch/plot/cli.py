@@ -12,7 +12,7 @@ from uuid import UUID
 import rich_click as click
 from rich.progress import track
 
-from bennch.plot.io.config import Config, ConfigContext, load_config, save_config
+from bennch.plot.io.config import Config, ConfigContext, load_config
 from bennch.plot.io.tarball import get_variable_value, get_variables, list_files
 from bennch.plot.io.uuidmap import export_uuid_set, import_uuid_set
 from bennch.plot.io.uuids import import_uuids
@@ -155,9 +155,9 @@ def cli_set_add(config: Config, uuids: tuple[UUID, ...]):
 
 @cli_set.command("rm")
 @click.argument("uuid", type=UUID)
-def cli_set_remove(uuid: UUID):
+@click.pass_obj
+def cli_set_remove(config: Config, uuid: UUID):
     "Remove the given UUID from the current set."
-    config = load_config()
     sets = SetCache()
 
     uset = sets.load(config.current_set.setid)
@@ -165,7 +165,6 @@ def cli_set_remove(uuid: UUID):
 
     sets.save(uset)
     config.current_set.setid = uset.key
-    save_config(config)
     return config.current_set
 
 
@@ -335,6 +334,8 @@ def cli_thread_scaling_plot() -> None:
     tplot = ThreadScalingPlot()
     print(tplot.required_variables)
     print(list(uset))
-    values = get_variables(UuidSet(frozenset(uset)), tplot.required_variables, config)
+    values = get_variables(
+        UuidSet(frozenset(uset)), tplot.required_variables, config, optional=tplot.detailed_timer_variables
+    )
     print(values)
     tplot.plot(values, config.current_set.setid)

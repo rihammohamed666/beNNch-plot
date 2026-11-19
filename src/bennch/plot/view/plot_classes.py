@@ -22,6 +22,21 @@ class ThreadScalingPlot:
         "time_omp_synchronization_simulation",
         "time_mpi_synchronization",
     ]
+    # detailed timers.
+    detailed_timer_variables = [
+        "time_update",
+        "time_collocate_spike_data",
+        "time_communicate_spike_data",
+        "time_deliver_spike_data",
+        "time_omp_synchronization_simulation",
+        "time_mpi_synchronization",
+    ]
+
+    def has_detailed_timers(self, data):
+        """Return True if every thread count has all detailed timer values."""
+        return all(
+            values.get(variable) is not None for values in data.values() for variable in self.detailed_timer_variables
+        )
 
     def aggregate_by_threads(self, data):
         """Aggregate by number of threads and take averages."""
@@ -35,54 +50,39 @@ class ThreadScalingPlot:
         for threads, runs in grouped.items():
             averaged[threads] = {}
             for variable in self.required_variables:
-                values = [run[variable] for run in runs if run[variable] is not None]  # type: ignore[list-item]
+                values = [run[variable] for run in runs if run.get(variable) is not None]  # type: ignore[list-item]
                 if values:
                     averaged[threads][variable] = sum(values) / len(values)  # type: ignore
                 else:
                     averaged[threads][variable] = None
         return averaged
 
-    def compute_derived_quantities(self, data):
-        """Do the necessary computations to plot."""
+    def compute_derived_quantities(self, data, detailed_timers):
+        """Do the necessary computations to plot.
+
+        The phase quantities are only computed if detailed_timers is True.
+        """
         for values in data.values():
             if values["py_time_create"] is not None and values["py_time_connect"] is not None:
                 values["construction_time"] = values["py_time_create"] + values["py_time_connect"]
             else:
                 values["construction_time"] = None
+
+            if not detailed_timers:
+                continue
+
             values["time_communicate_spike_data"] = (
                 values["time_communicate_spike_data"] - values["time_mpi_synchronization"]
             )
 
-            phase_times = [
-                values["time_update"],
-                values["time_collocate_spike_data"],
-                values["time_communicate_spike_data"],
-                values["time_deliver_spike_data"],
-                values["time_omp_synchronization_simulation"],
-                values["time_mpi_synchronization"],
-            ]
-            if all(time is not None for time in phase_times):
-                values["phase_total"] = sum(phase_times)
+            values["phase_total"] = sum(values[variable] for variable in self.detailed_timer_variables)
 
-                values["phase_update"] = values["time_update"] / values["phase_total"]
-
-                values["phase_collocate"] = values["time_collocate_spike_data"] / values["phase_total"]
-
-                values["phase_communicate"] = values["time_communicate_spike_data"] / values["phase_total"]
-
-                values["phase_deliver"] = values["time_deliver_spike_data"] / values["phase_total"]
-
-                values["phase_omp_sync"] = values["time_omp_synchronization_simulation"] / values["phase_total"]
-
-                values["phase_mpi_sync"] = values["time_mpi_synchronization"] / values["phase_total"]
-            else:
-                values["phase_total"] = None
-                values["phase_update"] = None
-                values["phase_collocate"] = None
-                values["phase_communicate"] = None
-                values["phase_deliver"] = None
-                values["phase_omp_sync"] = None
-                values["phase_mpi_sync"] = None
+            values["phase_update"] = values["time_update"] / values["phase_total"]
+            values["phase_collocate"] = values["time_collocate_spike_data"] / values["phase_total"]
+            values["phase_communicate"] = values["time_communicate_spike_data"] / values["phase_total"]
+            values["phase_deliver"] = values["time_deliver_spike_data"] / values["phase_total"]
+            values["phase_omp_sync"] = values["time_omp_synchronization_simulation"] / values["phase_total"]
+            values["phase_mpi_sync"] = values["time_mpi_synchronization"] / values["phase_total"]
 
         return data
 
@@ -197,9 +197,14 @@ class ThreadScalingPlot:
             ax.legend(loc="upper center", bbox_to_anchor=(1.02, 0.5))
 
     def plot(self, data, set_id):
-        """Execute the plot using other functions."""
+        """Execute the plot using other functions.
+
+        With detailed timers: runtime, real-time factor and phase fractions.
+        Without detailed timers: runtime and real-time factor only.
+        """
         data = self.aggregate_by_threads(data)
-        data = self.compute_derived_quantities(data)
+        detailed_timers = self.has_detailed_timers(data)
+        data = self.compute_derived_quantities(data, detailed_timers)
 
         threads = sorted(data)
 
@@ -215,20 +220,27 @@ class ThreadScalingPlot:
 
         ax1 = fig.add_subplot(spec[:, 0])
         ax2 = fig.add_subplot(spec[0, 1])
-        ax3 = fig.add_subplot(spec[1, 1])
+        axes = [ax1, ax2]
 
         self.plot_runtime(ax1, data)
         self.plot_runtime_breakdown(ax2, data)
-        self.plot_fractions(ax3, data)
 
         ax1.set_ylabel("Wall time [s]")
         ax2.set_ylabel("Real-time factor")
-        ax3.set_ylabel("Relative wall time [%]")
-
         ax1.set_xlabel("Number of Threads")
-        ax3.set_xlabel("Number of Threads")
 
-        for ax in (ax1, ax2, ax3):
+        if detailed_timers:
+            # The phase fractions panel only exists with detailed timers;
+            # otherwise the lower right of the figure stays empty.
+            ax3 = fig.add_subplot(spec[1, 1])
+            axes.append(ax3)
+
+            self.plot_fractions(ax3, data)
+
+            ax3.set_ylabel("Relative wall time [%]")
+            ax3.set_xlabel("Number of Threads")
+
+        for ax in axes:
             ax.set_xscale("log", base=2)
             ax.set_xticks(threads)
             ax.margins(x=0)
